@@ -1,7 +1,7 @@
 /*
  * backend_defs.h
  *
- *  Created on: Jul 29, 2021
+ *  Created on: Dec 5, 2021
  *      Author: Maciej Kozarzewski
  */
 
@@ -27,6 +27,8 @@ namespace avocado
 		{
 #endif
 
+		const int AVOCADO_MAX_TENSOR_DIMENSIONS = 8;
+
 		typedef long long avSize_t;
 
 		typedef enum
@@ -36,6 +38,7 @@ namespace avocado
 			AVOCADO_DEVICE_OPENCL
 		} avDeviceType_t;
 		typedef int avDeviceIndex_t;
+		const avDeviceIndex_t AVOCADO_INVALID_DEVICE_INDEX = -1;
 
 		/**
 		 *  Enumeration type used for function status returns, which can be one of the following values.
@@ -47,9 +50,10 @@ namespace avocado
 			AVOCADO_STATUS_FREE_FAILED, /**< Resource deallocation failed inside the library. This is an irrecoverable error. */
 			AVOCADO_STATUS_BAD_PARAM, /**< An incorrect value or parameter was passed to the function. */
 			AVOCADO_STATUS_ARCH_MISMATCH, /**< The function requires a feature that is not supported on a device. */
-			AVOCADO_STATUS_INTERNAL_ERROR, /**< An internal Avocado operation failed. */
+			AVOCADO_STATUS_INTERNAL_ERROR, /**< Some internal operation failed. */
 			AVOCADO_STATUS_NOT_SUPPORTED, /**< The functionality requested is not presently supported. */
-			AVOCADO_STATUS_UNSUPPORTED_DATATYPE /**< The data type is not presently supported. */
+			AVOCADO_STATUS_UNSUPPORTED_DATATYPE, /**< The data type is not presently supported. */
+			AVOCADO_STATUS_EXECUTION_FAILED /**< The function failed to execute.*/
 		} avStatus_t;
 
 		/**
@@ -269,75 +273,26 @@ namespace avocado
 			AVOCADO_CONV_ALGORITHM_WINOGRAD, /**<  */
 		} avConvAlgorithm_t;
 
-		typedef int avContextDescriptor_t;
+		/* Opaque type for backend memory block descriptor */
 		typedef int avMemoryDescriptor_t;
+
+		/* Opaque type for backend context descriptor */
+		typedef int avContextDescriptor_t;
+
+		/* Opaque type for backend tensor descriptor */
 		typedef int avTensorDescriptor_t;
+
+		/* Opaque type for backend convolution descriptor */
 		typedef int avConvolutionDescriptor_t;
+
+		/* Opaque type for backend pooling descriptor */
 		typedef int avPoolingDescriptor_t;
 
-		/* Opaque structure holding context */
-		struct ContextDescriptor;
-		typedef struct ContextDescriptor *avContext_t;
+		/* Opaque type for backend optimizer descriptor */
+		typedef int avOptimizerDescriptor_t;
 
-		DLL_PUBLIC struct ShapeDescriptor
-		{
-				int dim[8];
-				int length;
-		};
-		typedef struct ShapeDescriptor *avShape_t;
-
-		DLL_PUBLIC struct ScalarDescriptor
-		{
-				char data[16];
-				avDataType_t dtype;
-		};
-		typedef struct ScalarDescriptor *avScalar_t;
-
-		DLL_PUBLIC struct TensorDescriptor
-		{
-				ShapeDescriptor shape;
-				avDataType_t dtype;
-				void *data;
-		};
-		typedef struct TensorDescriptor *avTensor_t;
-
-		DLL_PUBLIC struct ConvolutionDescriptor
-		{
-				avConvAlgorithm_t algorithm;
-				avActivationType_t activation;
-				ShapeDescriptor filter;
-				ShapeDescriptor padding;
-				ShapeDescriptor stride;
-				ShapeDescriptor dilation;
-				ScalarDescriptor padding_value;
-				int groups;
-				bool invert_filter;
-		};
-		typedef struct ConvolutionDescriptor *avConvolution_t;
-
-		DLL_PUBLIC struct PoolingDescriptor
-		{
-				avPoolingMode_t mode;
-				ShapeDescriptor filter;
-				ShapeDescriptor padding;
-				ShapeDescriptor stride;
-		};
-		typedef struct PoolingDescriptor *avPooling_t;
-
-		DLL_PUBLIC struct OptimizerDescriptor
-		{
-				avOptimizerType_t type;
-				double learning_rate;
-				double coef[4];
-				bool flags[4];
-		};
-		typedef struct OptimizerDescriptor *avOptimizer_t;
-
-		DLL_PUBLIC struct DropoutDescriptor
-		{
-				double propability;
-		};
-		typedef struct DropoutDescriptor *avDropout_t;
+		/* Opaque type for backend dropout descriptor */
+		typedef int avDropoutDescriptor_t;
 
 #ifdef __cplusplus
 		}
