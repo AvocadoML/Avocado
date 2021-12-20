@@ -97,129 +97,62 @@ namespace avocado
 		 */
 		typedef enum
 		{
-			AVOCADO_REDUCE_TENSOR_ADD, /**< The operation to be performed is addition. */
-			AVOCADO_REDUCE_TENSOR_MUL, /**< The operation to be performed is multiplication. */
-			AVOCADO_REDUCE_TENSOR_MIN, /**< The operation to be performed is a minimum comparison. */
-			AVOCADO_REDUCE_TENSOR_MAX, /**< The operation to be performed is a maximum comparison. */
-			AVOCADO_REDUCE_TENSOR_AMAX, /**< The operation to be performed is a maximum comparison of absolute values. */
-			AVOCADO_REDUCE_TENSOR_AVG, /**< The operation to be performed is averaging. */
-			AVOCADO_REDUCE_TENSOR_NORM1, /**< The operation to be performed is addition of absolute values. */
-			AVOCADO_REDUCE_TENSOR_NORM2, /**< The operation to be performed is a square root of the sum of squares. */
-			AVOCADO_REDUCE_TENSOR_MUL_NO_ZEROS /**< The operation to be performed is multiplication, not including elements of value zero. */
-		} avReduceTensorOp_t;
-
-//			CUDNN_POINTWISE_ABS
-//			In this mode, a pointwise absolute value of the input tensor is computed.
-//			CUDNN_POINTWISE_CEIL
-//			In this mode, a pointwise ceiling of the input tensor is computed.
-//			CUDNN_POINTWISE_COS
-//			In this mode, a pointwise trigonometric cosine of the input tensor is computed.
-//			CUDNN_POINTWISE_EXP
-//			In this mode, a pointwise exponential of the input tensor is computed.
-//			CUDNN_POINTWISE_FLOOR
-//			In this mode, a pointwise floor of the input tensor is computed.
-//			CUDNN_POINTWISE_LOG
-//			In this mode, a pointwise natural logarithm of the input tensor is computed.
-//			CUDNN_POINTWISE_NEG
-//			In this mode, a pointwise numerical negative of the input tensor is computed.
-//			CUDNN_POINTWISE_RSQRT
-//			In this mode, a pointwise reciprocal of the square root of the input tensor is computed.
-//			CUDNN_POINTWISE_SIN
-//			In this mode, a pointwise trigonometric sine of the input tensor is computed.
-//			CUDNN_POINTWISE_SQRT
-//			In this mode, a pointwise square root of the input tensor is computed.
-//			CUDNN_POINTWISE_TAN
-//			In this mode, a pointwise trigonometric tangent of the input tensor is computed.
-//			CUDNN_POINTWISE_LOGICAL_NOT
-//			In this mode, a pointwise truth value of input tensor's logical NOT is computed.
-
-//			CUDNN_POINTWISE_ADD
-//			In this mode, a pointwise addition between two tensors is computed.
-//			CUDNN_POINTWISE_ADD_SQUARE
-//			In this mode, a pointwise addition between the first tensor and the square of the second tensor is computed.
-//			CUDNN_POINTWISE_DIV
-//			In this mode, a pointwise true division of the first tensor by second tensor is computed.
-//			CUDNN_POINTWISE_MAX
-//			In this mode, a pointwise maximum is taken between two tensors.
-//			CUDNN_POINTWISE_MIN
-//			In this mode, a pointwise minimum is taken between two tensors.
-//			CUDNN_POINTWISE_MOD
-//			In this mode, a pointwise floating-point remainder of the first tensor's division by the second tensor is computed.
-//			CUDNN_POINTWISE_MUL
-//			In this mode, a pointwise multiplication between two tensors is computed.
-//			CUDNN_POINTWISE_POW
-//			In this mode, a pointwise value from the first tensor to the power of the second tensor is computed.
-//			CUDNN_POINTWISE_SUB
-//			In this mode, a pointwise subtraction between two tensors is computed.
-//			CUDNN_POINTWISE_CMP_EQ
-//			In this mode, a pointwise truth value of the first tensor equal to the second tensor is computed.
-//			CUDNN_POINTWISE_CMP_NEQ
-//			In this mode, a pointwise truth value of the first tensor not equal to the second tensor is computed.
-//			CUDNN_POINTWISE_CMP_GT
-//			In this mode, a pointwise truth value of the first tensor greater than the second tensor is computed.
-//			CUDNN_POINTWISE_CMP_GE
-//			In this mode, a pointwise truth value of the first tensor greater than equal to the second tensor is computed.
-//			CUDNN_POINTWISE_CMP_LT
-//			In this mode, a pointwise truth value of the first tensor less than the second tensor is computed.
-//			CUDNN_POINTWISE_CMP_LE
-//			In this mode, a pointwise truth value of the first tensor less than equal to the second tensor is computed.
-//			CUDNN_POINTWISE_LOGICAL_AND
-//			In this mode, a pointwise truth value of the first tensor logical AND second tensor is computed.
-//			CUDNN_POINTWISE_LOGICAL_OR
-//			In this mode, a pointwise truth value of the first tensor logical OR second tensor is computed.
-
-//			CUDNN_POINTWISE_RELU_FWD
-//			In this mode, a pointwise rectified linear activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_TANH_FWD
-//			In this mode, a pointwise tanh activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_SIGMOID_FWD
-//			In this mode, a pointwise sigmoid activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_ELU_FWD
-//			In this mode, a pointwise Exponential Linear Unit activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_GELU_FWD
-//			In this mode, a pointwise Gaussian Error Linear Unit activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_SOFTPLUS_FWD
-//			In this mode, a pointwise softplus activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_SWISH_FWD
-//			In this mode, a pointwise swish activation function of the input tensor is computed.
-//			CUDNN_POINTWISE_RELU_BWD
-//			In this mode, a pointwise first derivative of rectified linear activation of the input tensor is computed.
-//			CUDNN_POINTWISE_TANH_BWD
-//			In this mode, a pointwise first derivative of tanh activation of the input tensor is computed.
-//			CUDNN_POINTWISE_SIGMOID_BWD
-//			In this mode, a pointwise first derivative of sigmoid activation of the input tensor is computed.
-//			CUDNN_POINTWISE_ELU_BWD
-//			In this mode, a pointwise first derivative of Exponential Linear Unit activation of the input tensor is computed.
-//			CUDNN_POINTWISE_GELU_BWD
-//			In this mode, a pointwise first derivative of Gaussian Error Linear Unit activation of the input tensor is computed.
-//			CUDNN_POINTWISE_SOFTPLUS_BWD
-//			In this mode, a pointwise first derivative of softplus activation of the input tensor is computed.
-//			CUDNN_POINTWISE_SWISH_BWD
-//			In this mode, a pointwise first derivative of swish activation of the input tensor is computed.
+			AVOCADO_REDUCE_ADD, /**< The operation to be performed is addition. */
+			AVOCADO_REDUCE_MUL, /**< The operation to be performed is multiplication. */
+			AVOCADO_REDUCE_MIN, /**< The operation to be performed is a minimum comparison. */
+			AVOCADO_REDUCE_MAX, /**< The operation to be performed is a maximum comparison. */
+			AVOCADO_REDUCE_AMAX, /**< The operation to be performed is a maximum comparison of absolute values. */
+			AVOCADO_REDUCE_AVG, /**< The operation to be performed is averaging. */
+			AVOCADO_REDUCE_NORM1, /**< The operation to be performed is addition of absolute values. */
+			AVOCADO_REDUCE_NORM2, /**< The operation to be performed is a square root of the sum of squares. */
+			AVOCADO_REDUCE_MUL_NO_ZEROS /**< The operation to be performed is multiplication, not including elements of value zero. */
+		} avReduceOp_t;
 
 		/**
-		 * Enumeration type used to indicate the operation to be used by the OpTensor() routine.
+		 * Enumeration type used to indicate the operation to be used by the BinaryOp() routine.
 		 */
 		typedef enum
 		{
-			AVOCADO_OP_TENSOR_ADD, /**< The operation to be performed is addition. */
-			AVOCADO_OP_TENSOR_SUB, /**< The operation to be performed is subtraction. */
-			AVOCADO_OP_TENSOR_MUL, /**< The operation to be performed is multiplication. */
-			AVOCADO_OP_TENSOR_DIV, /**< The operation to be performed is division. */
-			AVOCADO_OP_TENSOR_MIN, /**< The operation to be performed is a minimum comparison. */
-			AVOCADO_OP_TENSOR_MAX /**< The operation to be performed is a maximum comparison. */
-		} avOpTensorOp_t;
+			AVOCADO_BINARY_OP_ADD, /**< The operation to be performed is addition. */
+			AVOCADO_BINARY_OP_ADD_SQUARE, /**< The operation to be performed is addition between the first tensor and the square of the second tensor. */
+			AVOCADO_BINARY_OP_SUB, /**< The operation to be performed is subtraction. */
+			AVOCADO_BINARY_OP_MUL, /**< The operation to be performed is multiplication. */
+			AVOCADO_BINARY_OP_DIV, /**< The operation to be performed is division. */
+			AVOCADO_BINARY_OP_MOD, /**< The operation to be performed is floating-point remainder of the first tensor's division by the second tensor. */
+			AVOCADO_BINARY_OP_POW, /**< The operation to be performed is value from the first tensor to the power of the second tensor. */
+			AVOCADO_BINARY_OP_MIN, /**< The operation to be performed is a minimum comparison. */
+			AVOCADO_BINARY_OP_MAX, /**< The operation to be performed is a maximum comparison. */
+			AVOCADO_BINARY_OP_COMPARE_EQ, /**< The operation to be performed is truth value of the first tensor equal to the second tensor. */
+			AVOCADO_BINARY_OP_COMPARE_NEQ, /**< The operation to be performed is truth value of the first tensor not equal to the second tensor. */
+			AVOCADO_BINARY_OP_COMPARE_GT, /**< The operation to be performed is truth value of the first tensor greater than to the second tensor. */
+			AVOCADO_BINARY_OP_COMPARE_GE, /**< The operation to be performed is truth value of the first tensor greater than equal to the second tensor. */
+			AVOCADO_BINARY_OP_COMPARE_LT, /**< The operation to be performed is truth value of the first tensor less than to the second tensor. */
+			AVOCADO_BINARY_OP_COMPARE_LE, /**< The operation to be performed is truth value of the first tensor less than equal to the second tensor. */
+			AVOCADO_BINARY_OP_LOGICAL_AND, /**< The operation to be performed is truth value of the first tensor logical AND to the second tensor. */
+			AVOCADO_BINARY_OP_LOGICAL_OR, /**< The operation to be performed is truth value of the first tensor logical OR to the second tensor. */
+			AVOCADO_BINARY_OP_LOGICAL_XOR /**< The operation to be performed is truth value of the first tensor logical XOR to the second tensor. */
+		} avBinaryOp_t;
 
 		/**
-		 * Enumeration type used to indicate the operation to be used by the OpSingleTensor() routine.
+		 * Enumeration type used to indicate the operation to be used by the UnaryOp() routine.
 		 */
 		typedef enum
 		{
-			AVOCADO_OP_SINGLE_TENSOR_ABS, /**< The operation to be performed is absolute value. */
-			AVOCADO_OP_SINGLE_TENSOR_SQUARE, /**< The operation to be performed is squaring. */
-			AVOCADO_OP_SINGLE_TENSOR_SQRT, /**< The operation to be performed is square root. */
-			AVOCADO_OP_SINGLE_TENSOR_NOT /**< The operation to be performed is negation. */
-		} avOpSingleTensorOp_t;
+			AVOCADO_UNARY_OP_ABS, /**< The operation to be performed is absolute value. */
+			AVOCADO_UNARY_OP_CEIL, /**< The operation to be performed is ceiling value. */
+			AVOCADO_UNARY_OP_COS, /**< The operation to be performed is trigonometric cosine. */
+			AVOCADO_UNARY_OP_EXP, /**< The operation to be performed is exponential of a tensor. */
+			AVOCADO_UNARY_OP_FLOOR, /**< The operation to be performed is floor value. */
+			AVOCADO_UNARY_OP_LN, /**< The operation to be performed is natural logarithm. */
+			AVOCADO_UNARY_OP_NEG, /**< The operation to be performed is negation. */
+			AVOCADO_UNARY_OP_RCP, /**< The operation to be performed is reciprocal value. */
+			AVOCADO_UNARY_OP_RSQRT, /**< The operation to be performed is reciprocal of the square root. */
+			AVOCADO_UNARY_OP_SIN, /**< The operation to be performed is trigonometric sine. */
+			AVOCADO_UNARY_OP_SQUARE, /**< The operation to be performed is squaring. */
+			AVOCADO_UNARY_OP_SQRT, /**< The operation to be performed is square root. */
+			AVOCADO_UNARY_OP_TAN, /**< The operation to be performed is trigonometric tangent. */
+			AVOCADO_UNARY_OP_LOGICAL_NOT /**< The operation to be performed is logical negation. */
+		} avUnaryOp_t;
 
 		/**
 		 * Enumeration type used to select the pooling method in PoolingForward() and PoolingBackward().
@@ -227,8 +160,8 @@ namespace avocado
 		typedef enum
 		{
 			AVOCADO_POOLING_MAX, /**< The maximum value inside the pooling window is used. */
-			AVOCADO_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, /**< Values inside the pooling window are averaged including values from the padding region. */
-			AVOCADO_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING /**< Values inside the pooling window are averaged excluding values from the padding region. */
+			AVOCADO_POOLING_AVERAGE_INCLUDE_PADDING, /**< Values inside the pooling window are averaged including values from the padding region. */
+			AVOCADO_POOLING_AVERAGE_EXCLUDE_PADDING /**< Values inside the pooling window are averaged excluding values from the padding region. */
 		} avPoolingMode_t;
 
 		/**
@@ -267,11 +200,17 @@ namespace avocado
 
 		typedef enum
 		{
-			AVOCADO_CONV_ALGORITHM_AUTO, /**<  */
-			AVOCADO_CONV_ALGORITHM_EXPLICIT_GEMM, /**<  */
-			AVOCADO_CONV_ALGORITHM_IMPLICIT_GEMM, /**<  */
-			AVOCADO_CONV_ALGORITHM_WINOGRAD, /**<  */
-		} avConvAlgorithm_t;
+			AVOCADO_CONVOLUTION_MODE, /**<  */
+			AVOCADO_CROSS_CORRELATION_MODE /**<  */
+		} avConvolutionMode_t;
+
+		typedef enum
+		{
+			AVOCADO_CONVOLUTION_ALGORITHM_AUTO, /**<  */
+			AVOCADO_CONVOLUTION_ALGORITHM_EXPLICIT_GEMM, /**<  */
+			AVOCADO_CONVOLUTION_ALGORITHM_IMPLICIT_GEMM, /**<  */
+			AVOCADO_CONVOLUTION_ALGORITHM_WINOGRAD, /**<  */
+		} avConvolutionAlgorithm_t;
 
 		/* Opaque type for backend memory block descriptor */
 		typedef int avMemoryDescriptor_t;
