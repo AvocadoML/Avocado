@@ -41,6 +41,34 @@ namespace avocado
 		const avDeviceIndex_t AVOCADO_INVALID_DEVICE_INDEX = -1;
 
 		/**
+		 * Enumeration type used to query device properties.
+		 */
+		typedef enum
+		{
+			AVOCADO_DEVICE_NAME, /**< char[256] - Name of the device */
+			AVOCADO_DEVICE_PROCESSOR_COUNT, /**< int32 - Number of processors in the device (logical cores of CPU devices or streaming multiprocessors of CUDA devices) */
+			AVOCADO_DEVICE_MEMORY, /**< int64 - Number of bytes of memory (RAM memory of CPU devices, or global memory of CUDA devices) */
+			AVOCADO_DEVICE_SUPPORTS_HALF_PRECISION, /**< bool - Whether the device supports half floats */
+			AVOCADO_DEVICE_SUPPORTS_BFLOAT16, /**< bool - Whether the device supports bfloat16 format */
+			AVOCADO_DEVICE_SUPPORTS_SINGLE_PRECISION, /**< bool - Whether the device supports single precision floating point numbers */
+			AVOCADO_DEVICE_SUPPORTS_DOUBLE_PRECISION, /**< bool - Whether the device supports double precision floating point numbers */
+			AVOCADO_DEVICE_SUPPORTS_SSE, /**< bool - Whether the device supports SSE instruction set */
+			AVOCADO_DEVICE_SUPPORTS_SSE2, /**< bool - Whether the device supports SSE2 instruction set */
+			AVOCADO_DEVICE_SUPPORTS_SSE3, /**< bool - Whether the device supports SSE3 instruction set */
+			AVOCADO_DEVICE_SUPPORTS_SSSE3, /**< bool - Whether the device supports SSSE3 instruction set */
+			AVOCADO_DEVICE_SUPPORTS_SSE41, /**< bool - Whether the device supports SSE4.1 instruction set */
+			AVOCADO_DEVICE_SUPPORTS_SSE42, /**< bool - Whether the device supports SSE4.2 instruction set */
+			AVOCADO_DEVICE_SUPPORTS_AVX, /**< bool - Whether the device supports AVX instruction set */
+			AVOCADO_DEVICE_SUPPORTS_AVX2, /**< bool - Whether the device supports AVX2 instruction set */
+			AVOCADO_DEVICE_SUPPORTS_AVX512_F, /**< bool - Whether the device supports AVX512F instruction set */
+			AVOCADO_DEVICE_SUPPORTS_AVX512_VL_BW_DQ, /**< bool - Whether the device supports AVX512VL, AVX512BW and AVX512DQ instruction sets */
+			AVOCADO_DEVICE_SUPPORTS_DP4A, /**< bool - Whether the device supports dp4a instruction (only for CUDA devices) */
+			AVOCADO_DEVICE_CUDA_ARCH_MAJOR, /**< int32 - Major version number of the CUDA architecture */
+			AVOCADO_DEVICE_CUDA_ARCH_MINOR, /**< int32 - Minor version number of the CUDA architecture */
+			AVOCADO_DEVICE_SUPPORTS_TENSOR_CORES, /**< bool - Whether the device supports tensor core operations (only for CUDA devices) */
+		} avDeviceProperty_t;
+
+		/**
 		 *  Enumeration type used for function status returns, which can be one of the following values.
 		 */
 		typedef enum
