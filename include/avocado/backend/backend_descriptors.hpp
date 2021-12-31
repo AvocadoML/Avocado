@@ -146,11 +146,11 @@ namespace avocado
 					return std::find(m_available_descriptors.begin(), m_available_descriptors.end(), index) == m_available_descriptors.end();
 			}
 
-			T& get(int index) noexcept
+			T& get(int index)
 			{
 				return *(m_pool.at(index));
 			}
-			const T& get(int index) const noexcept
+			const T& get(int index) const
 			{
 				return *(m_pool.at(index));
 			}
@@ -468,11 +468,11 @@ namespace avocado
 			{
 				if (static_cast<bool>(m_workspace) == false)
 				{
-					m_workspace_size = 1 << 22;
+					m_workspace_size = 1 << 23;
 #if USE_CUDA or USE_OPENCL
-					m_workspace.create(m_workspace_size, m_device_index); // lazy allocation of 4MB workspace
+					m_workspace.create(m_workspace_size, m_device_index); // lazy allocation of 8MB workspace
 #else
-							m_workspace.create(m_workspace_size); // lazy allocation of 4MB workspace
+					m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
 #endif
 				}
 				return m_workspace;
