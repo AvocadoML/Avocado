@@ -238,6 +238,7 @@ namespace avocado
 			AVOCADO_CONVOLUTION_ALGORITHM_EXPLICIT_GEMM, /**<  */
 			AVOCADO_CONVOLUTION_ALGORITHM_IMPLICIT_GEMM, /**<  */
 			AVOCADO_CONVOLUTION_ALGORITHM_WINOGRAD, /**<  */
+			AVOCADO_CONVOLUTION_ALGORITHM_WINOGRAD_FUSED /**<  */
 		} avConvolutionAlgorithm_t;
 
 		/* Opaque type for backend memory block descriptor */
