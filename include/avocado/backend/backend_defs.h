@@ -28,6 +28,7 @@ namespace avocado
 #endif
 
 		const int AVOCADO_MAX_TENSOR_DIMENSIONS = 8;
+		const long long AVOCADO_INVALID_DESCRIPTOR = -1;
 
 		typedef long long avSize_t;
 
@@ -63,8 +64,8 @@ namespace avocado
 			AVOCADO_DEVICE_SUPPORTS_AVX512_F, /**< bool - Whether the device supports AVX512F instruction set */
 			AVOCADO_DEVICE_SUPPORTS_AVX512_VL_BW_DQ, /**< bool - Whether the device supports AVX512VL, AVX512BW and AVX512DQ instruction sets */
 			AVOCADO_DEVICE_SUPPORTS_DP4A, /**< bool - Whether the device supports dp4a instruction (only for CUDA devices) */
-			AVOCADO_DEVICE_CUDA_ARCH_MAJOR, /**< int32 - Major version number of the CUDA architecture */
-			AVOCADO_DEVICE_CUDA_ARCH_MINOR, /**< int32 - Minor version number of the CUDA architecture */
+			AVOCADO_DEVICE_ARCH_MAJOR, /**< int32 - Major version number of the CUDA or OpenCl architecture */
+			AVOCADO_DEVICE_ARCH_MINOR, /**< int32 - Minor version number of the CUDA or OpenCl architecture */
 			AVOCADO_DEVICE_SUPPORTS_TENSOR_CORES, /**< bool - Whether the device supports tensor core operations (only for CUDA devices) */
 		} avDeviceProperty_t;
 
@@ -241,26 +242,28 @@ namespace avocado
 			AVOCADO_CONVOLUTION_ALGORITHM_WINOGRAD_FUSED /**<  */
 		} avConvolutionAlgorithm_t;
 
+		typedef long long int av_int64;
+
 		/* Opaque type for backend memory block descriptor */
-		typedef int avMemoryDescriptor_t;
+		typedef av_int64 avMemoryDescriptor_t;
 
 		/* Opaque type for backend context descriptor */
-		typedef int avContextDescriptor_t;
+		typedef av_int64 avContextDescriptor_t;
 
 		/* Opaque type for backend tensor descriptor */
-		typedef int avTensorDescriptor_t;
+		typedef av_int64 avTensorDescriptor_t;
 
 		/* Opaque type for backend convolution descriptor */
-		typedef int avConvolutionDescriptor_t;
+		typedef av_int64 avConvolutionDescriptor_t;
 
 		/* Opaque type for backend pooling descriptor */
-		typedef int avPoolingDescriptor_t;
+		typedef av_int64 avPoolingDescriptor_t;
 
 		/* Opaque type for backend optimizer descriptor */
-		typedef int avOptimizerDescriptor_t;
+		typedef av_int64 avOptimizerDescriptor_t;
 
 		/* Opaque type for backend dropout descriptor */
-		typedef int avDropoutDescriptor_t;
+		typedef av_int64 avDropoutDescriptor_t;
 
 #ifdef __cplusplus
 		}
