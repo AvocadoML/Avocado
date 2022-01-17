@@ -77,6 +77,30 @@ namespace avocado
 	{
 		return m_device;
 	}
+	void Context::synchronize() const
+	{
+		switch (m_device.type())
+		{
+			case DeviceType::CPU:
+			{
+				backend::avStatus_t status = backend::cpuSynchronizeWithContext(m_data);
+				CHECK_CPU_STATUS(status)
+				break;
+			}
+			case DeviceType::CUDA:
+			{
+				backend::avStatus_t status = backend::cudaSynchronizeWithContext(m_data);
+				CHECK_CUDA_STATUS(status)
+				break;
+			}
+			case DeviceType::OPENCL:
+			{
+				backend::avStatus_t status = backend::openclSynchronizeWithContext(m_data);
+				CHECK_OPENCL_STATUS(status)
+				break;
+			}
+		}
+	}
 	backend::avContextDescriptor_t Context::getDescriptor() const noexcept
 	{
 		return m_data;

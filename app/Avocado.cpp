@@ -7,33 +7,33 @@
 //============================================================================
 
 #include <iostream>
+#include <Avocado/core/Context.hpp>
 #include <Avocado/core/Tensor.hpp>
+#include <Avocado/core/Scalar.hpp>
 #include <Avocado/core/DataType.hpp>
-#include <Avocado/backend/backend_libraries.hpp>
-#include <ReferenceBackend/reference_backend.h>
+#include <Avocado/math/tensor_operations.hpp>
 
 using namespace avocado;
 using namespace avocado::backend;
 
 int main()
 {
-	avMemoryDescriptor_t mem;
-	cpuCreateMemoryDescriptor(&mem, 4000);
-	avContextDescriptor_t context = cpuGetDefaultContext();
-//	avStatus_t status = cpuSetMemory(context, mem, 0, 4000, nullptr, 0);
-//	std::cout << status << '\n';
-	cpuDestroyMemoryDescriptor(mem);
+	std::cout << Device::hardwareInfo() << std::endl;
 
-//	cudaCreateMemoryDescriptor(&mem, 0, 4000);
-//	avContextDescriptor_t context = cudaGetDefaultContext(1);
-//	avStatus_t status = cudaSetMemory(context, mem, 0, 4000, nullptr, 0);
-//	std::cout << status << '\n';
-//	cudaDestroyMemoryDescriptor(mem);
+	Context context(Device::cuda(0));
+	context.synchronize();
 
-//	Tensor t(Shape( { 10, 10, 10 }), DataType::FLOAT32, Device::cpu());
-//	t.set(1.0f, { 1, 2, 3 });
+	Tensor t1(Shape( { 10, 10, 10 }), DataType::FLOAT32, Device::cpu());
+	t1.setall(1.0f);
+	t1.set(2.0f, { 1, 2, 3 });
 
-//	std::cout << t.get<float>( { 1, 2, 3 }) << '\n';
+	Tensor t2(Shape( { 10, 10, 10 }), DataType::FLOAT32, Device::cuda(0));
+
+	math::copyTensor(context, t2, t1);
+	context.synchronize();
+
+	std::cout << t2.get<float>( { 1, 2, 3 }) << '\n';
+	std::cout << t2.get<float>( { 1, 2, 2 }) << '\n';
 
 	std::cout << "!!!Hello World!!!" << std::endl; // prints !!!Hello World!!!
 	return 0;

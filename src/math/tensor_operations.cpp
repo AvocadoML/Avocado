@@ -10,21 +10,28 @@
 #include <Avocado/core/Tensor.hpp>
 #include <Avocado/core/Scalar.hpp>
 
+#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend/backend_libraries.hpp>
+
 namespace avocado
 {
 	namespace math
 	{
 		void zeroTensor(const Context &context, Tensor &tensor)
 		{
+			internal::set_memory(context, tensor.getMemory(), 0, tensor.sizeInBytes(), nullptr, 0);
 		}
 		void setTensor(const Context &context, Tensor &tensor, const Scalar &value)
 		{
+			internal::set_memory(context, tensor.getMemory(), 0, tensor.sizeInBytes(), value.data(), value.sizeInBytes());
 		}
 		void copyTensor(const Context &context, Tensor &dst, const Tensor &src)
 		{
+			copyTensor(context, dst, src, dst.volume());
 		}
 		void copyTensor(const Context &context, Tensor &dst, const Tensor &src, size_t elements)
 		{
+			internal::copy_memory(context, dst.getMemory(), 0, src.getMemory(), 0, elements * sizeOf(src.dtype()));
 		}
 
 		void concatTensors(const Context &context, Tensor &dst, const std::vector<Tensor> &src)

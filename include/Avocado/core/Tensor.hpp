@@ -13,6 +13,7 @@
 #include <Avocado/core/Device.hpp>
 #include <Avocado/core/DataType.hpp>
 #include <Avocado/core/error_handling.hpp>
+#include <Avocado/math/descriptor_wrappers.hpp>
 
 #include <cstring>
 #include <assert.h>
@@ -29,48 +30,6 @@ namespace avocado /* forward declarations */
 
 namespace avocado
 {
-	namespace internal
-	{
-		class TensorDescWrapper
-		{
-				backend::avTensorDescriptor_t m_descriptor = backend::AVOCADO_INVALID_DESCRIPTOR;
-				Device m_device = Device::cpu();
-			public:
-				TensorDescWrapper() = default;
-				TensorDescWrapper(Device device);
-				TensorDescWrapper(const TensorDescWrapper &other) = delete;
-				TensorDescWrapper(TensorDescWrapper &&other);
-				TensorDescWrapper& operator=(const TensorDescWrapper &other) = delete;
-				TensorDescWrapper& operator=(TensorDescWrapper &&other);
-				~TensorDescWrapper();
-				void set(const Shape &shape, DataType dtype);
-				operator backend::avTensorDescriptor_t() const noexcept
-				{
-					return m_descriptor;
-				}
-		};
-
-		class MemoryDescWrapper
-		{
-				backend::avMemoryDescriptor_t m_descriptor = backend::AVOCADO_INVALID_DESCRIPTOR;
-				Device m_device = Device::cpu();
-			public:
-				MemoryDescWrapper() = default;
-				MemoryDescWrapper(Device device, size_t sizeInBytes);
-				MemoryDescWrapper(const MemoryDescWrapper &desc, size_t sizeInBytes, size_t offsetInBytes);
-				MemoryDescWrapper(const MemoryDescWrapper &other) = delete;
-				MemoryDescWrapper(MemoryDescWrapper &&other);
-				MemoryDescWrapper& operator=(const MemoryDescWrapper &other) = delete;
-				MemoryDescWrapper& operator=(MemoryDescWrapper &&other);
-				~MemoryDescWrapper();
-				operator backend::avMemoryDescriptor_t() const noexcept
-				{
-					return m_descriptor;
-				}
-				void set(backend::avContextDescriptor_t context, size_t dstOffset, size_t count, const void *pattern, size_t patternSizeInBytes);
-		};
-	}
-
 	class Tensor
 	{
 		private:

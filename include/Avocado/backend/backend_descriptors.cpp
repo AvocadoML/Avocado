@@ -15,7 +15,6 @@
 #include <memory>
 #include <cstring>
 #include <cassert>
-#include <iostream>
 
 namespace avocado
 {
@@ -31,8 +30,8 @@ namespace avocado
 		namespace opencl
 		{
 #else
-				namespace reference
-				{
+		namespace reference
+		{
 #endif
 
 			avDeviceType_t get_device_type(av_int64 descriptor) noexcept
@@ -59,11 +58,11 @@ namespace avocado
 			av_int64 get_current_device_type() noexcept
 			{
 #if USE_CUDA
-				return 1ull << static_cast<av_int64>(AVOCADO_DEVICE_CUDA);
+				return static_cast<av_int64>(AVOCADO_DEVICE_CUDA);
 #elif USE_OPENCL
-				return 1ull << static_cast<av_int64>(AVOCADO_DEVICE_OPENCL);
+				return static_cast<av_int64>(AVOCADO_DEVICE_OPENCL);
 #else
-				return 1ull << static_cast<av_int64>(AVOCADO_DEVICE_CPU);
+				return static_cast<av_int64>(AVOCADO_DEVICE_CPU);
 #endif
 			}
 			av_int64 get_current_device_index() noexcept
@@ -73,14 +72,6 @@ namespace avocado
 
 			av_int64 create_descriptor(int index, av_int64 type)
 			{
-				std::cout << USE_CPU << " " << USE_CUDA << " " << USE_OPENCL << '\n';
-				std::cout << "device type = " << get_current_device_type() << ", index = " << index << '\n';
-				std::cout << (get_current_device_type() << 56ull) << '\n';
-				std::cout << (type << 48ull) << '\n';
-				std::cout << (static_cast<av_int64>(get_current_device_index()) << 32ull) << '\n';
-				std::cout << (static_cast<av_int64>(index)) << '\n';
-				std::cout << '\n';
-
 				return (static_cast<av_int64>(get_current_device_type()) << 56ull) | (type << 48ull)
 						| (static_cast<av_int64>(get_current_device_index()) << 32ull) | static_cast<av_int64>(index);
 			}
@@ -118,8 +109,8 @@ namespace avocado
 			}
 
 #if USE_CUDA
-#  define CHECK_CUDA_ERROR(x) if (x != cudaSuccess) throw std::runtime_error("");
-#  define CHECK_CUBLAS_STATUS(x) if (x != CUBLAS_STATUS_SUCCESS) throw std::runtime_error("");
+#  define CHECK_CUDA_ERROR(x, msg) if ((x) != cudaSuccess) throw std::runtime_error(msg);
+#  define CHECK_CUBLAS_STATUS(x, msg) if ((x) != CUBLAS_STATUS_SUCCESS) throw std::runtime_error(msg);
 #endif
 
 			/*
@@ -187,9 +178,9 @@ namespace avocado
 			{
 #  if USE_CUDA
 				cudaError_t err = cudaSetDevice(index);
-				CHECK_CUDA_ERROR(err)
+				CHECK_CUDA_ERROR(err, "MemoryDescriptor::create() : cudaSetDevice()");
 				err = cudaMalloc(reinterpret_cast<void**>(&m_data), sizeInBytes);
-				CHECK_CUDA_ERROR(err)
+				CHECK_CUDA_ERROR(err, "MemoryDescriptor::create() : cudaMalloc()");
 #  else /* USE_OPENCL */
 
 #  endif
@@ -231,7 +222,7 @@ namespace avocado
 					if (m_is_owning)
 					{
 						cudaError_t err = cudaFree(m_data);
-						CHECK_CUDA_ERROR(err)
+						CHECK_CUDA_ERROR(err, "MemoryDescriptor::destroy() : cudaFree()");
 					}
 					m_data = nullptr;
 				}
@@ -263,7 +254,8 @@ namespace avocado
 			 */
 			ContextDescriptor::ContextDescriptor(ContextDescriptor &&other) :
 #if USE_CUDA
-							m_stream(other.m_stream), m_handle(other.m_handle),
+					m_stream(other.m_stream),
+					m_handle(other.m_handle),
 #elif USE_OPENCL
 #endif
 					m_device_index(other.m_device_index),
@@ -315,19 +307,19 @@ namespace avocado
 			void ContextDescriptor::create(avDeviceIndex_t index, bool useDefaultStream)
 			{
 				cudaError_t err = cudaSetDevice(index);
-				CHECK_CUDA_ERROR(err)
+				CHECK_CUDA_ERROR(err, "ContextDescriptor::create() : cudaSetDevice()");
 				if (useDefaultStream)
 					m_stream = nullptr;
 				else
 				{
 					err = cudaStreamCreate(&m_stream);
-					CHECK_CUDA_ERROR(err)
+					CHECK_CUDA_ERROR(err, "ContextDescriptor::create() : cudaStreamCreate()");
 				}
 
 				cublasStatus_t status = cublasCreate_v2(&m_handle);
-				CHECK_CUBLAS_STATUS(status)
+				CHECK_CUBLAS_STATUS(status, "ContextDescriptor::create() : cublasCreate_v2()");
 				status = cublasSetStream_v2(m_handle, m_stream);
-				CHECK_CUBLAS_STATUS(status)
+				CHECK_CUBLAS_STATUS(status, "ContextDescriptor::create() : cublasSetStream_v2()");
 				m_device_index = index;
 			}
 #elif USE_OPENCL
@@ -346,18 +338,18 @@ namespace avocado
 #if USE_CPU
 #elif USE_CUDA
 				cudaError_t err = cudaDeviceSynchronize();
-				CHECK_CUDA_ERROR(err)
+				CHECK_CUDA_ERROR(err, "ContextDescriptor::destroy() : cudaDeviceSynchronize()");
 				if (m_handle != nullptr)
 				{
 					cublasStatus_t status = cublasDestroy_v2(m_handle);
-					CHECK_CUBLAS_STATUS(status)
+					CHECK_CUBLAS_STATUS(status, "ContextDescriptor::destroy() : cublasDestroy_v2()");
 					m_handle = nullptr;
 				}
 
 				if (m_stream != nullptr)
 				{
 					err = cudaStreamDestroy(m_stream);
-					CHECK_CUDA_ERROR(err)
+					CHECK_CUDA_ERROR(err, "ContextDescriptor::destroy() : cudaStreamDestroy()");
 					m_stream = nullptr;
 				}
 #elif USE_OPENCL
@@ -385,7 +377,7 @@ namespace avocado
 			void ContextDescriptor::setDevice() const
 			{
 				cudaError_t err = cudaSetDevice(m_device_index);
-				CHECK_CUDA_ERROR(err)
+				CHECK_CUDA_ERROR(err, "ContextDescriptor::setDevice() : cudaSetDevice()");
 			}
 			avDeviceIndex_t ContextDescriptor::getDevice() const noexcept
 			{
@@ -716,21 +708,21 @@ namespace avocado
 			{
 				thread_local DescriptorPool<ContextDescriptor> result = []()
 				{
-					std::cout << __LINE__ << " init0\n";
 					int nb_devices = 0;
-					std::cout << __LINE__ << " init1\n";
 					cudaError_t status = cudaGetDeviceCount(&nb_devices);
-					std::cout << __LINE__ << " init2\n";
 					if (status != cudaSuccess)
-					nb_devices = 0;
-					std::cout << __LINE__ << " init3\n";
-					DescriptorPool<ContextDescriptor> tmp;
-					std::cout << __LINE__ << " init4\n";
-					for (int i = 0; i < nb_devices; i++)
-					tmp.create(i, true); // reserve descriptors for default contexts
-						std::cout << __LINE__ << " init5\n";
+						nb_devices = 0;
+					try
+					{
+						DescriptorPool<ContextDescriptor> tmp;
+						for (int i = 0; i < nb_devices; i++)
+							tmp.create(i, true); // reserve descriptors for default contexts
 						return tmp;
-					}();
+					} catch (std::exception &e)
+					{
+						return DescriptorPool<ContextDescriptor>();
+					}
+				}();
 				return result;
 			}
 #elif USE_OPENCL
@@ -746,9 +738,15 @@ namespace avocado
 			{
 				thread_local DescriptorPool<ContextDescriptor> result = []()
 				{
-					DescriptorPool<ContextDescriptor> tmp;
-					tmp.create(); // reserve descriptor 0 for default context
-					return tmp;
+					try
+					{
+						DescriptorPool<ContextDescriptor> tmp;
+						tmp.create(); // reserve descriptor 0 for default context
+						return tmp;
+					} catch (std::exception &e)
+					{
+						return DescriptorPool<ContextDescriptor>();
+					}
 				}();
 				return result;
 			}
@@ -756,17 +754,14 @@ namespace avocado
 
 			MemoryDescriptor& getMemory(avMemoryDescriptor_t desc)
 			{
-				std::cout << __LINE__ << " getMemory(" << desc << ")\n";
 				return getPool<MemoryDescriptor>().get(desc);
 			}
 			ContextDescriptor& getContext(avContextDescriptor_t desc)
 			{
-				std::cout << __LINE__ << " getContext(" << desc << ")\n";
 				return getPool<ContextDescriptor>().get(desc);
 			}
 			TensorDescriptor& getTensor(avTensorDescriptor_t desc)
 			{
-				std::cout << __LINE__ << " getTensor(" << desc << ")\n";
 				return getPool<TensorDescriptor>().get(desc);
 			}
 			ConvolutionDescriptor& getConvolution(avConvolutionDescriptor_t desc)
@@ -855,10 +850,6 @@ namespace avocado
 				int rhs_volume = rhs.volume();
 				assert(lhs_volume > 0 && rhs_volume > 0);
 				BroadcastedDimensions result { lhs_volume / rhs_volume, rhs_volume };
-//			for (int i = 0; i < lhs.length - rhs.length; i++)
-//				result.first *= lhs.dim[i];
-//			for (int i = lhs.length - rhs.length; i < lhs.length; i++)
-//				result.last *= lhs.dim[i];
 				return result;
 			}
 

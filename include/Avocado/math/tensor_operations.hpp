@@ -8,15 +8,20 @@
 #ifndef AVOCADO_MATH_TENSOR_OPERATIONS_HPP_
 #define AVOCADO_MATH_TENSOR_OPERATIONS_HPP_
 
+#include <Avocado/backend/backend_defs.h>
+
 #include <vector>
 
 namespace avocado
 {
 	class Tensor;
 	class Context;
+	class Device;
 	class Scalar;
-	enum class DataType;
-	enum class NonlinearityType;
+	enum class DataType
+	;
+	enum class NonlinearityType
+	;
 }
 
 namespace avocado

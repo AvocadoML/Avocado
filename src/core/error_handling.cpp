@@ -9,6 +9,40 @@
 #include <Avocado/core/Device.hpp>
 #include <Avocado/backend/backend_libraries.hpp>
 
+namespace
+{
+	const char* get_status_name(int status)
+	{
+		switch (status)
+		{
+			case avocado::backend::AVOCADO_STATUS_SUCCESS:
+				return "SUCCESS";
+			case avocado::backend::AVOCADO_STATUS_ALLOC_FAILED:
+				return "ALLOC_FAILED";
+			case avocado::backend::AVOCADO_STATUS_FREE_FAILED:
+				return "FREE_FAILED";
+			case avocado::backend::AVOCADO_STATUS_BAD_PARAM:
+				return "BAD_PARAM";
+			case avocado::backend::AVOCADO_STATUS_ARCH_MISMATCH:
+				return "ARCH_MISMATCH";
+			case avocado::backend::AVOCADO_STATUS_INTERNAL_ERROR:
+				return "INTERNAL_ERROR";
+			case avocado::backend::AVOCADO_STATUS_NOT_SUPPORTED:
+				return "NOT_SUPPORTED";
+			case avocado::backend::AVOCADO_STATUS_UNSUPPORTED_DATATYPE:
+				return "UNSUPPORTED_DATATYPE";
+			case avocado::backend::AVOCADO_STATUS_EXECUTION_FAILED:
+				return "EXECUTION_FAILED";
+			case avocado::backend::AVOCADO_STATUS_INSUFFICIENT_DRIVER:
+				return "INSUFFICIENT_DRIVER";
+			case avocado::backend::AVOCADO_STATUS_DEVICE_TYPE_MISMATCH:
+				return "DEVICE_MISMATCH";
+			default:
+				return "UNKNOWN";
+		}
+	}
+}
+
 namespace avocado
 {
 
@@ -92,8 +126,16 @@ namespace avocado
 			std::invalid_argument(std::string(function) + " : " + d.toString())
 	{
 	}
+	CpuRuntimeError::CpuRuntimeError(const char *function, int error) :
+			std::runtime_error(std::string(function) + " : " + get_status_name(error))
+	{
+	}
+	CpuRuntimeError::CpuRuntimeError(const char *function, const std::string &comment) :
+			std::runtime_error(std::string(function) + " : " + comment)
+	{
+	}
 	CudaRuntimeError::CudaRuntimeError(const char *function, int error) :
-			std::runtime_error("") // std::runtime_error(std::string(function) + " : " + backend::cudaDecodeStatus(static_cast<backend::avStatus_t>(error)))
+			std::runtime_error(std::string(function) + " : " + get_status_name(error))
 	{
 	}
 	CudaRuntimeError::CudaRuntimeError(const char *function, const std::string &comment) :
@@ -101,7 +143,7 @@ namespace avocado
 	{
 	}
 	OpenCLRuntimeError::OpenCLRuntimeError(const char *function, int error) :
-		std::runtime_error("") // std::runtime_error(std::string(function) + " : " + backend::openclDecodeStatus(static_cast<backend::avStatus_t>(error)))
+			std::runtime_error(std::string(function) + " : " + get_status_name(error))
 	{
 	}
 	OpenCLRuntimeError::OpenCLRuntimeError(const char *function, const std::string &comment) :

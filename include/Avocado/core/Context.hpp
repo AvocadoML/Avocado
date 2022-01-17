@@ -28,6 +28,7 @@ namespace avocado
 			Context& operator=(Context &&other);
 
 			Device device() const noexcept;
+			void synchronize() const;
 
 			backend::avContextDescriptor_t getDescriptor() const noexcept;
 			operator backend::avContextDescriptor_t() const noexcept;

@@ -78,7 +78,7 @@ namespace avocado
 #if USE_CUDA
 				if (std::is_same<T, float16>::value or std::is_same<T, half>::value)
 #else
-				if (std::is_same<T, float16>::value)
+					if (std::is_same<T, float16>::value)
 #endif
 					result = AVOCADO_DTYPE_FLOAT16;
 				if (std::is_same<T, bfloat16>::value)
@@ -99,7 +99,7 @@ namespace avocado
 			class MemoryDescriptor
 			{
 #if USE_OPENCL
-					uint8_t *m_data = nullptr;
+				uint8_t *m_data = nullptr;
 #else
 					uint8_t *m_data = nullptr;
 #endif
@@ -127,7 +127,7 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 					void create(avDeviceIndex_t index, avSize_t sizeInBytes);
 #else
-					void create(int64_t sizeInBytes);
+				void create(int64_t sizeInBytes);
 #endif
 					/**
 					 * \brief Creates a non-owning view of another memory block.
@@ -144,16 +144,16 @@ namespace avocado
 //					cl::Buffer& data(void *ptr) noexcept;
 //					const cl::Buffer& data(const void *ptr) const noexcept;
 
-					template<typename T = void>
-					T* data() noexcept
-					{
-						return reinterpret_cast<T*>(m_data + m_offset);
-					}
-					template<typename T = void>
-					const T* data() const noexcept
-					{
-						return reinterpret_cast<const T*>(m_data + m_offset);
-					}
+				template<typename T = void>
+				T* data() noexcept
+				{
+					return reinterpret_cast<T*>(m_data + m_offset);
+				}
+				template<typename T = void>
+				const T* data() const noexcept
+				{
+					return reinterpret_cast<const T*>(m_data + m_offset);
+				}
 
 #else
 					template<typename T = void>
@@ -196,14 +196,14 @@ namespace avocado
 					 * \brief This method initializes context descriptor.
 					 */
 #if USE_CPU
-					void create();
+				void create();
 
 #elif USE_CUDA
 					void create(avDeviceIndex_t index, bool useDefaultStream = false);
 #elif USE_OPENCL
-					void create(avDeviceIndex_t index, bool useDefaultCommandQueue);
+				void create(avDeviceIndex_t index, bool useDefaultCommandQueue);
 #else
-					void create();
+				void create();
 #endif
 					/**
 					 * \brief This method destroys context and all its resources.
@@ -365,49 +365,50 @@ namespace avocado
 					 */
 					bool isValid(int64_t index) const noexcept
 					{
-						std::cout << __LINE__ << " " << index << '\n';
-						std::cout << __LINE__ << " device type = " << get_current_device_type() << '\n';
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : index = " << index << '\n';
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : device type = " << get_current_device_type() << '\n';
 						if (get_current_device_type() != get_device_type(index))
 						{
-							std::cout << __LINE__ << " device type mismatch : " << get_current_device_type() << " vs " << get_device_type(index)
-									<< '\n';
+//							std::cout << __FUNCTION__ << " " << __LINE__ << " : device type mismatch : " << get_current_device_type() << " vs "
+//									<< get_device_type(index) << '\n';
 							return false;
 						}
 						if (T::descriptor_type != get_descriptor_type(index))
 						{
-							std::cout << __LINE__ << " type mismatch : " << T::descriptor_type << " vs " << get_descriptor_type(index) << '\n';
+//							std::cout << __FUNCTION__ << " " << __LINE__ << " : type mismatch : " << T::descriptor_type << " vs "
+//									<< get_descriptor_type(index) << '\n';
 							return false;
 						}
 
 						int object_index = get_descriptor_index(index);
-						std::cout << __LINE__ << " object index = " << object_index << '\n';
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " object index = " << object_index << '\n';
 						if (object_index < 0 or object_index > static_cast<int>(m_pool.size()))
 						{
-							std::cout << __LINE__ << " out of bounds : " << object_index << " vs 0:" << m_pool.size() << '\n';
+//							std::cout << __FUNCTION__ << " " << __LINE__ << " : out of bounds : " << object_index << " vs 0:" << m_pool.size()
+//									<< '\n';
 							return false;
 						}
 						bool asdf = std::find(m_available_descriptors.begin(), m_available_descriptors.end(), object_index)
 								== m_available_descriptors.end();
-						if (asdf == false)
-						{
-							std::cout << "not in available\n";
-						}
+//						if (asdf == false)
+//						{
+//							std::cout << "not in available\n";
+//						}
 						return asdf;
 					}
 
 					T& get(av_int64 index)
 					{
-						std::cout << __PRETTY_FUNCTION__ << '\n';
-						std::cout << __LINE__ << " tutaj " << T::className() << "\n";
-						std::cout << index << '\n';
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
 						if (not isValid(index))
 							throw std::logic_error("invalid descriptor of type" + T::className());
 						return *(m_pool.at(get_descriptor_index(index)));
 					}
 					const T& get(int64_t index) const
 					{
-						std::cout << __PRETTY_FUNCTION__ << '\n';
-						std::cout << __LINE__ << " tutaj const " << T::className() << "\n";
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
 						if (not isValid(index))
 							throw std::logic_error("invalid descriptor of type" + T::className());
 						return *(m_pool.at(get_descriptor_index(index)));
@@ -428,9 +429,7 @@ namespace avocado
 							result = m_pool.size() - 1;
 						}
 						m_pool.at(result)->create(std::forward<Args>(args)...);
-						auto asdf = create_descriptor(result, T::descriptor_type);
-						std::cout << __PRETTY_FUNCTION__ << "\n" << "new descriptor = " << asdf << '\n';
-						return asdf;
+						return create_descriptor(result, T::descriptor_type);
 					}
 					void destroy(av_int64 index)
 					{
@@ -474,7 +473,7 @@ namespace avocado
 					getPool<T>().destroy(desc);
 				} catch (std::exception &e)
 				{
-					std::cout << e.what() << '\n';
+//					std::cout << e.what() << '\n';
 					return AVOCADO_STATUS_FREE_FAILED;
 				}
 				return AVOCADO_STATUS_SUCCESS;
@@ -496,6 +495,10 @@ namespace avocado
 					return getMemory(desc).data<T>();
 				} catch (std::exception &e)
 				{
+//					std::cout << "----------------------------------------------\n";
+//					std::cout << "desc = " << desc << '\n';
+//					std::cout << __FILE__ << ":" << __LINE__ << " " << e.what() << '\n';
+//					std::cout << "----------------------------------------------\n";
 					return nullptr;
 				}
 			}
@@ -563,30 +566,16 @@ namespace avocado
 			bool is_logical(avBinaryOp_t op) noexcept;
 			bool is_logical(avUnaryOp_t op) noexcept;
 
-			template<class T, class U>
-			bool same_type(const T *lhs, const U *rhs)
+			template<typename T, typename U>
+			bool same_device_type(T lhs, U rhs)
 			{
-				return lhs->dtype == rhs->dtype;
+				return get_device_type(lhs) == get_device_type(rhs);
 			}
-			template<class T, class U, class ... ARGS>
-			bool same_type(const T *lhs, const U *rhs, const ARGS *... args)
+			template<typename T, typename U, typename ... ARGS>
+			bool same_device_type(T lhs, U rhs, ARGS ... args)
 			{
-				if (lhs->dtype == rhs->dtype)
-					return same_type(lhs, args...);
-				else
-					return false;
-			}
-
-			template<class T, class U>
-			bool same_shape(const T *lhs, const U *rhs)
-			{
-				return areEqual(lhs->shape, rhs->shape);
-			}
-			template<class T, class U, class ... ARGS>
-			bool same_shape(const T *lhs, const U *rhs, const ARGS *... args)
-			{
-				if (areEqual(lhs->shape, rhs->shape))
-					return same_shape(lhs, args...);
+				if (get_device_type(lhs) == get_device_type(rhs))
+					return same_device_type(lhs, args...);
 				else
 					return false;
 			}

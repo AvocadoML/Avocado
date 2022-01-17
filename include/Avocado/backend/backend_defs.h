@@ -82,7 +82,9 @@ namespace avocado
 			AVOCADO_STATUS_INTERNAL_ERROR, /**< Some internal operation failed. */
 			AVOCADO_STATUS_NOT_SUPPORTED, /**< The functionality requested is not presently supported. */
 			AVOCADO_STATUS_UNSUPPORTED_DATATYPE, /**< The data type is not presently supported. */
-			AVOCADO_STATUS_EXECUTION_FAILED /**< The function failed to execute.*/
+			AVOCADO_STATUS_EXECUTION_FAILED, /**< The function failed to execute.*/
+			AVOCADO_STATUS_INSUFFICIENT_DRIVER, /**< The function failed to execute.*/
+			AVOCADO_STATUS_DEVICE_TYPE_MISMATCH /**< Passed descriptors are allocated on different devices */
 		} avStatus_t;
 
 		/**

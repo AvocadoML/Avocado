@@ -87,6 +87,12 @@ namespace avocado
 		public:
 			IllegalDevice(const char *function, Device d);
 	};
+	class CpuRuntimeError: public std::runtime_error
+	{
+		public:
+			CpuRuntimeError(const char *function, int error);
+			CpuRuntimeError(const char *function, const std::string &comment);
+	};
 	class CudaRuntimeError: public std::runtime_error
 	{
 		public:
@@ -103,7 +109,7 @@ namespace avocado
 	{
 	};
 
-#define CHECK_CPU_STATUS(status) if(status != backend::AVOCADO_STATUS_SUCCESS) throw RuntimeError(METHOD_NAME, "");
+#define CHECK_CPU_STATUS(status) if(status != backend::AVOCADO_STATUS_SUCCESS) throw CpuRuntimeError(METHOD_NAME, status);
 #define CHECK_CUDA_STATUS(status) if(status != backend::AVOCADO_STATUS_SUCCESS) throw CudaRuntimeError(METHOD_NAME, status);
 #define CHECK_OPENCL_STATUS(status) if(status != backend::AVOCADO_STATUS_SUCCESS) throw OpenCLRuntimeError(METHOD_NAME, status);
 } /* namespace avocado */
