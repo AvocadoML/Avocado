@@ -5,8 +5,8 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/utils/serialization.hpp>
-#include <avocado/core/error_handling.hpp>
+#include <Avocado/utils/serialization.hpp>
+#include <Avocado/core/error_handling.hpp>
 
 #include <cassert>
 #include <cstring>

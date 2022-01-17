@@ -5,12 +5,12 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/Shape.hpp>
-#include <avocado/utils/json.hpp>
-#include <avocado/utils/serialization.hpp>
-#include <avocado/core/error_handling.hpp>
+#include <Avocado/core/Shape.hpp>
+#include <Avocado/utils/json.hpp>
+#include <Avocado/utils/serialization.hpp>
+#include <Avocado/core/error_handling.hpp>
 
-#include <avocado/backend/backend_defs.h>
+#include <Avocado/backend/backend_defs.h>
 
 #include <cstring>
 

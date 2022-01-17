@@ -5,10 +5,10 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/Device.hpp>
-#include <avocado/core/DataType.hpp>
-#include <avocado/core/error_handling.hpp>
-#include <avocado/backend/backend_libraries.hpp>
+#include <Avocado/core/Device.hpp>
+#include <Avocado/core/DataType.hpp>
+#include <Avocado/core/error_handling.hpp>
+#include <Avocado/backend/backend_libraries.hpp>
 
 #include <cstring>
 #include <vector>
@@ -343,11 +343,11 @@ namespace avocado
 		{
 			default:
 			case DeviceType::CPU:
-				return cpu_features().memory;
+				return cpu_features().memory >> 20;
 			case DeviceType::CUDA:
-				return cuda_features(index()).global_memory;
+				return cuda_features(index()).global_memory >> 20;
 			case DeviceType::OPENCL:
-				return opencl_features(index()).global_memory;
+				return opencl_features(index()).global_memory >> 20;
 		}
 	}
 	int Device::cores() const noexcept

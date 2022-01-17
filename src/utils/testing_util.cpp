@@ -5,9 +5,9 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/Tensor.hpp>
-#include <avocado/core/DataType.hpp>
-#include <avocado/utils/testing_helpers.hpp>
+#include <Avocado/core/Tensor.hpp>
+#include <Avocado/core/DataType.hpp>
+#include <Avocado/utils/testing_helpers.hpp>
 
 #include <complex>
 #include <memory>

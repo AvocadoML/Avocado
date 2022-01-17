@@ -5,10 +5,12 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/Context.hpp>
-#include <avocado/backend/backend_libraries.hpp>
+#include <Avocado/core/Context.hpp>
+#include <Avocado/backend/backend_libraries.hpp>
+#include <Avocado/core/error_handling.hpp>
 
 #include <algorithm>
+#include <iostream>
 
 namespace avocado
 {
@@ -18,14 +20,23 @@ namespace avocado
 		switch (device.type())
 		{
 			case DeviceType::CPU:
-				backend::cpuCreateContextDescriptor(&m_data);
+			{
+				backend::avStatus_t status = backend::cpuCreateContextDescriptor(&m_data);
+				CHECK_CPU_STATUS(status)
 				break;
+			}
 			case DeviceType::CUDA:
-				backend::cudaCreateContextDescriptor(&m_data, device.index());
+			{
+				backend::avStatus_t status = backend::cudaCreateContextDescriptor(&m_data, device.index());
+				CHECK_CUDA_STATUS(status)
 				break;
+			}
 			case DeviceType::OPENCL:
-				backend::openclCreateContextDescriptor(&m_data, device.index());
+			{
+				backend::avStatus_t status = backend::openclCreateContextDescriptor(&m_data, device.index());
+				CHECK_OPENCL_STATUS(status)
 				break;
+			}
 		}
 	}
 	Context::Context(Context &&other) :
@@ -42,17 +53,23 @@ namespace avocado
 	}
 	Context::~Context()
 	{
+		backend::avStatus_t status;
 		switch (m_device.type())
 		{
 			case DeviceType::CPU:
-				backend::cpuDestroyContextDescriptor(m_data);
+				status = backend::cpuDestroyContextDescriptor(m_data);
 				break;
 			case DeviceType::CUDA:
-				backend::cudaDestroyContextDescriptor(m_data);
+				status = backend::cudaDestroyContextDescriptor(m_data);
 				break;
 			case DeviceType::OPENCL:
-				backend::openclDestroyContextDescriptor(m_data);
+				status = backend::openclDestroyContextDescriptor(m_data);
 				break;
+		}
+		if (status == backend::AVOCADO_STATUS_FREE_FAILED)
+		{
+			std::cout << "free failed\n";
+			exit(-1);
 		}
 	}
 

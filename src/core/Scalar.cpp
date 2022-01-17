@@ -5,8 +5,8 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/Scalar.hpp>
-#include <avocado/backend/backend_defs.h>
+#include <Avocado/core/Scalar.hpp>
+#include <Avocado/backend/backend_defs.h>
 
 #include <cassert>
 

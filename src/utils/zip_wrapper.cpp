@@ -5,7 +5,7 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/utils/zip_wrapper.hpp>
+#include <Avocado/utils/zip_wrapper.hpp>
 
 #include <zlib.h>
 

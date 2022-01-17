@@ -5,7 +5,7 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/utils/string_helpers.hpp>
+#include <Avocado/utils/string_helpers.hpp>
 
 #include <iostream>
 #include <cstring>

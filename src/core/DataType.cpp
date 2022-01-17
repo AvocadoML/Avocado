@@ -5,7 +5,7 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/DataType.hpp>
+#include <Avocado/core/DataType.hpp>
 
 namespace
 {

@@ -5,9 +5,9 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/core/error_handling.hpp>
-#include <avocado/core/Device.hpp>
-#include <avocado/backend/backend_libraries.hpp>
+#include <Avocado/core/error_handling.hpp>
+#include <Avocado/core/Device.hpp>
+#include <Avocado/backend/backend_libraries.hpp>
 
 namespace avocado
 {

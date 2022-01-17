@@ -5,9 +5,9 @@
  *      Author: Maciej Kozarzewski
  */
 
-#include <avocado/utils/json.hpp>
-#include <avocado/utils/string_helpers.hpp>
-#include <avocado/core/error_handling.hpp>
+#include <Avocado/utils/json.hpp>
+#include <Avocado/utils/string_helpers.hpp>
+#include <Avocado/core/error_handling.hpp>
 
 #include <cstring>
 #include <iostream>
