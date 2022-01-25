@@ -136,7 +136,9 @@ namespace avocado
 			AVOCADO_REDUCE_AVG, /**< The operation to be performed is averaging. */
 			AVOCADO_REDUCE_NORM1, /**< The operation to be performed is addition of absolute values. */
 			AVOCADO_REDUCE_NORM2, /**< The operation to be performed is a square root of the sum of squares. */
-			AVOCADO_REDUCE_MUL_NO_ZEROS /**< The operation to be performed is multiplication, not including elements of value zero. */
+			AVOCADO_REDUCE_MUL_NO_ZEROS, /**< The operation to be performed is multiplication, not including elements of value zero. */
+			AVOCADO_REDUCE_LOGICAL_OR, /**< The operation to be performed is logical OR */
+			AVOCADO_REDUCE_LOGICAL_AND /**< The operation to be performed is logical AND */
 		} avReduceOp_t;
 
 		/**
