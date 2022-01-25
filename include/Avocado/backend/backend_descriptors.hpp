@@ -18,6 +18,7 @@
 #include <memory>
 #include <cstring>
 #include <cassert>
+#include <mutex>
 #include <iostream>
 
 #if USE_CPU
@@ -57,55 +58,18 @@ namespace avocado
 
 			av_int64 create_descriptor(int index, av_int64 type);
 
-			/* placeholder structures instead of the real ones available in main Avocado library */
-			struct float16;
-			struct bfloat16;
-
-			template<typename T>
-			avDataType_t typeOf() noexcept
-			{
-				avDataType_t result = AVOCADO_DTYPE_UNKNOWN;
-				if (std::is_same<T, uint8_t>::value)
-					result = AVOCADO_DTYPE_UINT8;
-				if (std::is_same<T, int8_t>::value)
-					result = AVOCADO_DTYPE_INT8;
-				if (std::is_same<T, int16_t>::value)
-					result = AVOCADO_DTYPE_INT16;
-				if (std::is_same<T, int32_t>::value)
-					result = AVOCADO_DTYPE_INT32;
-				if (std::is_same<T, int64_t>::value)
-					result = AVOCADO_DTYPE_INT64;
-#if USE_CUDA
-				if (std::is_same<T, float16>::value or std::is_same<T, half>::value)
-#else
-					if (std::is_same<T, float16>::value)
-#endif
-					result = AVOCADO_DTYPE_FLOAT16;
-				if (std::is_same<T, bfloat16>::value)
-					result = AVOCADO_DTYPE_BFLOAT16;
-				if (std::is_same<T, float>::value)
-					result = AVOCADO_DTYPE_FLOAT32;
-				if (std::is_same<T, double>::value)
-					result = AVOCADO_DTYPE_FLOAT64;
-				if (std::is_same<T, std::complex<float>>::value)
-					result = AVOCADO_DTYPE_COMPLEX32;
-				if (std::is_same<T, std::complex<double>>::value)
-					result = AVOCADO_DTYPE_COMPLEX64;
-				return result;
-			}
-
 			int dataTypeSize(avDataType_t dtype) noexcept;
 
 			class MemoryDescriptor
 			{
 #if USE_OPENCL
-				uint8_t *m_data = nullptr;
+					uint8_t *m_data = nullptr;
 #else
 					uint8_t *m_data = nullptr;
 #endif
 					avDeviceIndex_t m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
-					int64_t m_size = 0;
-					int64_t m_offset = 0;
+					avSize_t m_size = 0;
+					avSize_t m_offset = 0;
 					bool m_is_owning = false;
 				public:
 					static constexpr av_int64 descriptor_type = 1;
@@ -117,7 +81,7 @@ namespace avocado
 					MemoryDescriptor& operator=(MemoryDescriptor &&other);
 					~MemoryDescriptor();
 					explicit operator bool() const noexcept;
-					int64_t size() const noexcept;
+					avSize_t size() const noexcept;
 					avDeviceIndex_t device() const noexcept;
 					static std::string className();
 
@@ -127,12 +91,12 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 					void create(avDeviceIndex_t index, avSize_t sizeInBytes);
 #else
-				void create(int64_t sizeInBytes);
+					void create(avSize_t sizeInBytes);
 #endif
 					/**
 					 * \brief Creates a non-owning view of another memory block.
 					 */
-					void create(const MemoryDescriptor &other, int64_t size, int64_t offset);
+					void create(const MemoryDescriptor &other, avSize_t size, avSize_t offset);
 
 					/**
 					 * \brief This method deallocates underlying memory and resets the descriptor.
@@ -144,16 +108,16 @@ namespace avocado
 //					cl::Buffer& data(void *ptr) noexcept;
 //					const cl::Buffer& data(const void *ptr) const noexcept;
 
-				template<typename T = void>
-				T* data() noexcept
-				{
-					return reinterpret_cast<T*>(m_data + m_offset);
-				}
-				template<typename T = void>
-				const T* data() const noexcept
-				{
-					return reinterpret_cast<const T*>(m_data + m_offset);
-				}
+					template<typename T = void>
+					T* data() noexcept
+					{
+						return reinterpret_cast<T*>(m_data + m_offset);
+					}
+					template<typename T = void>
+					const T* data() const noexcept
+					{
+						return reinterpret_cast<const T*>(m_data + m_offset);
+					}
 
 #else
 					template<typename T = void>
@@ -196,14 +160,14 @@ namespace avocado
 					 * \brief This method initializes context descriptor.
 					 */
 #if USE_CPU
-				void create();
+					void create();
 
 #elif USE_CUDA
 					void create(avDeviceIndex_t index, bool useDefaultStream = false);
 #elif USE_OPENCL
 				void create(avDeviceIndex_t index, bool useDefaultCommandQueue);
 #else
-				void create();
+					void create();
 #endif
 					/**
 					 * \brief This method destroys context and all its resources.
@@ -337,6 +301,7 @@ namespace avocado
 			{
 					std::vector<std::unique_ptr<T>> m_pool;
 					std::vector<int> m_available_descriptors;
+					std::mutex m_pool_mutex;
 				public:
 					DescriptorPool(size_t initialSize = 10)
 					{
@@ -344,11 +309,21 @@ namespace avocado
 						m_available_descriptors.reserve(initialSize);
 					}
 					DescriptorPool(const DescriptorPool<T> &other) = delete;
-					DescriptorPool(DescriptorPool<T> &&other) = default;
+					DescriptorPool(DescriptorPool<T> &&other) :
+							m_pool(std::move(other.m_pool)),
+							m_available_descriptors(std::move(other.m_available_descriptors))
+					{
+					}
 					DescriptorPool& operator=(const DescriptorPool<T> &other) = delete;
-					DescriptorPool& operator=(DescriptorPool<T> &&other) = default;
+					DescriptorPool& operator=(DescriptorPool<T> &&other)
+					{
+						std::swap(this->m_pool, other.m_pool);
+						std::swap(this->m_available_descriptors, other.m_available_descriptors);
+						return *this;
+					}
 					~DescriptorPool()
 					{
+						std::lock_guard lock(m_pool_mutex);
 						try
 						{
 							for (size_t i = 0; i < m_pool.size(); i++)
@@ -363,60 +338,59 @@ namespace avocado
 					 * \brief Checks if the passed descriptor is valid.
 					 * The descriptor is valid if and only if its index is within the size of m_pool vector and is not in the list of available descriptors.
 					 */
-					bool isValid(int64_t index) const noexcept
+					bool isValid(int64_t desc) const noexcept
 					{
-//						std::cout << __FUNCTION__ << " " << __LINE__ << " : index = " << index << '\n';
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : index = " << desc << '\n';
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : device type = " << get_current_device_type() << '\n';
-						if (get_current_device_type() != get_device_type(index))
+						if (get_current_device_type() != get_device_type(desc))
 						{
 //							std::cout << __FUNCTION__ << " " << __LINE__ << " : device type mismatch : " << get_current_device_type() << " vs "
-//									<< get_device_type(index) << '\n';
+//									<< get_device_type(desc) << std::endl;
 							return false;
 						}
-						if (T::descriptor_type != get_descriptor_type(index))
+						if (T::descriptor_type != get_descriptor_type(desc))
 						{
 //							std::cout << __FUNCTION__ << " " << __LINE__ << " : type mismatch : " << T::descriptor_type << " vs "
-//									<< get_descriptor_type(index) << '\n';
+//									<< get_descriptor_type(desc) << std::endl;
 							return false;
 						}
 
-						int object_index = get_descriptor_index(index);
-//						std::cout << __FUNCTION__ << " " << __LINE__ << " object index = " << object_index << '\n';
-						if (object_index < 0 or object_index > static_cast<int>(m_pool.size()))
+						int index = get_descriptor_index(desc);
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " object index = " << index << '\n';
+						if (index < 0 or index > static_cast<int>(m_pool.size()))
 						{
-//							std::cout << __FUNCTION__ << " " << __LINE__ << " : out of bounds : " << object_index << " vs 0:" << m_pool.size()
-//									<< '\n';
+//							std::cout << __FUNCTION__ << " " << __LINE__ << " : out of bounds : " << index << " vs 0:" << m_pool.size() << std::endl;
 							return false;
 						}
-						bool asdf = std::find(m_available_descriptors.begin(), m_available_descriptors.end(), object_index)
-								== m_available_descriptors.end();
-//						if (asdf == false)
-//						{
-//							std::cout << "not in available\n";
-//						}
+						bool asdf = std::find(m_available_descriptors.begin(), m_available_descriptors.end(), index) == m_available_descriptors.end();
+						if (asdf == false)
+						{
+//							std::cout << "not in available" << std::endl;
+						}
 						return asdf;
 					}
 
-					T& get(av_int64 index)
+					T& get(av_int64 desc)
 					{
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
-						if (not isValid(index))
-							throw std::logic_error("invalid descriptor of type" + T::className());
-						return *(m_pool.at(get_descriptor_index(index)));
+						if (not isValid(desc))
+							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
+						return *(m_pool.at(get_descriptor_index(desc)));
 					}
-					const T& get(int64_t index) const
+					const T& get(int64_t desc) const
 					{
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
-						if (not isValid(index))
-							throw std::logic_error("invalid descriptor of type" + T::className());
-						return *(m_pool.at(get_descriptor_index(index)));
+						if (not isValid(desc))
+							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
+						return *(m_pool.at(get_descriptor_index(desc)));
 					}
 
 					template<typename ... Args>
 					av_int64 create(Args &&... args)
 					{
+						std::lock_guard lock(m_pool_mutex);
 						int result;
 						if (m_available_descriptors.size() > 0)
 						{
@@ -429,23 +403,27 @@ namespace avocado
 							result = m_pool.size() - 1;
 						}
 						m_pool.at(result)->create(std::forward<Args>(args)...);
-						return create_descriptor(result, T::descriptor_type);
+						av_int64 tmp = create_descriptor(result, T::descriptor_type);
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << " = " << tmp << ", " << m_pool.size() << std::endl;
+						return tmp;
+//						return create_descriptor(result, T::descriptor_type);
 					}
-					void destroy(av_int64 index)
+					void destroy(av_int64 desc)
 					{
-						if (not isValid(index))
-							throw std::logic_error("invalid descriptor of type" + T::className());
-
-						int object_index = get_descriptor_index(index);
-						m_pool.at(object_index)->destroy();
-						m_available_descriptors.push_back(object_index);
+						std::lock_guard lock(m_pool_mutex);
+//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << " = " << desc << std::endl;
+						if (not isValid(desc))
+							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
+						int index = get_descriptor_index(desc);
+						m_pool.at(index)->destroy();
+						m_available_descriptors.push_back(index);
 					}
 			};
 
 			template<class T>
 			DescriptorPool<T>& getPool()
 			{
-				thread_local DescriptorPool<T> result;
+				static DescriptorPool<T> result;
 				return result;
 			}
 			template<>

@@ -161,7 +161,7 @@ namespace avocado
 				return m_data != nullptr;
 #endif
 			}
-			int64_t MemoryDescriptor::size() const noexcept
+			avSize_t MemoryDescriptor::size() const noexcept
 			{
 				return m_size;
 			}
@@ -176,30 +176,38 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 			void MemoryDescriptor::create(avDeviceIndex_t index, avSize_t sizeInBytes)
 			{
+				if (sizeInBytes > 0)
+				{
 #  if USE_CUDA
-				cudaError_t err = cudaSetDevice(index);
-				CHECK_CUDA_ERROR(err, "MemoryDescriptor::create() : cudaSetDevice()");
-				err = cudaMalloc(reinterpret_cast<void**>(&m_data), sizeInBytes);
-				CHECK_CUDA_ERROR(err, "MemoryDescriptor::create() : cudaMalloc()");
+					cudaError_t err = cudaSetDevice(index);
+					CHECK_CUDA_ERROR(err, "MemoryDescriptor::create() : cudaSetDevice()");
+					err = cudaMalloc(reinterpret_cast<void**>(&m_data), sizeInBytes);
+					CHECK_CUDA_ERROR(err, "MemoryDescriptor::create() : cudaMalloc()");
 #  else /* USE_OPENCL */
 
 #  endif
+				}
+				else
+					m_data = nullptr;
 				m_device_index = index;
 				m_offset = 0;
 				m_size = sizeInBytes;
 				m_is_owning = true;
 			}
 #else
-			void MemoryDescriptor::create(int64_t sizeInBytes)
+			void MemoryDescriptor::create(avSize_t sizeInBytes)
 			{
-				m_data = new uint8_t[sizeInBytes];
+				if (sizeInBytes > 0)
+					m_data = new uint8_t[sizeInBytes];
+				else
+					m_data = nullptr;
 				m_device_index = 0;
 				m_offset = 0;
 				m_size = sizeInBytes;
 				m_is_owning = true;
 			}
 #endif
-			void MemoryDescriptor::create(const MemoryDescriptor &other, int64_t size, int64_t offset)
+			void MemoryDescriptor::create(const MemoryDescriptor &other, avSize_t size, avSize_t offset)
 			{
 				if (other.m_is_owning == false)
 					throw std::logic_error("cannot create memory view from non-owning memory descriptor");
@@ -229,7 +237,7 @@ namespace avocado
 #elif USE_OPENCL
 #else
 				if (m_is_owning)
-				delete[] m_data;
+					delete[] m_data;
 				m_data = nullptr;
 #endif
 				m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
@@ -367,7 +375,7 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 					m_workspace.create(m_workspace_size, m_device_index); // lazy allocation of 8MB workspace
 #else
-							m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
+					m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
 #endif
 				}
 				return m_workspace;
@@ -736,7 +744,7 @@ namespace avocado
 			template<>
 			DescriptorPool<ContextDescriptor>& getPool()
 			{
-				thread_local DescriptorPool<ContextDescriptor> result = []()
+				static DescriptorPool<ContextDescriptor> result = []()
 				{
 					try
 					{
@@ -829,12 +837,12 @@ namespace avocado
 			 */
 			bool isBroadcastPossible(const TensorDescriptor &lhs, const TensorDescriptor &rhs) noexcept
 			{
-				if (lhs.nbDims() >= rhs.nbDims())
+				if (lhs.nbDims() < rhs.nbDims())
 					return false;
 				else
 				{
 					for (int i = 0, k = lhs.nbDims() - rhs.nbDims(); i < rhs.nbDims(); i++, k++)
-						if (rhs.dimension(i) != lhs.dimension(k))
+						if (lhs.dimension(k) != rhs.dimension(i) and rhs.dimension(i) != 1)
 							return false;
 					return true;
 				}
