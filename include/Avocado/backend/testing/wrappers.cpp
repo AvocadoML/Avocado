@@ -47,8 +47,8 @@ namespace avocado
 			refCreateContextDescriptor(&m_ref_desc);
 		}
 		ContextWrapper::ContextWrapper(ContextWrapper &&other) noexcept :
-				m_desc(other.m_desc),
-				m_ref_desc(other.m_ref_desc)
+		m_desc(other.m_desc),
+		m_ref_desc(other.m_ref_desc)
 		{
 			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
 			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
@@ -101,11 +101,11 @@ namespace avocado
 			zeroall();
 		}
 		TensorWrapper::TensorWrapper(TensorWrapper &&other) noexcept :
-				m_device_index(other.m_device_index),
-				m_tensor_descriptor(other.m_tensor_descriptor),
-				m_memory_descriptor(other.m_memory_descriptor),
-				m_ref_tensor_descriptor(other.m_ref_tensor_descriptor),
-				m_ref_memory_descriptor(other.m_ref_memory_descriptor)
+		m_device_index(other.m_device_index),
+		m_tensor_descriptor(other.m_tensor_descriptor),
+		m_memory_descriptor(other.m_memory_descriptor),
+		m_ref_tensor_descriptor(other.m_ref_tensor_descriptor),
+		m_ref_memory_descriptor(other.m_ref_memory_descriptor)
 		{
 			other.m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
 			other.m_tensor_descriptor = AVOCADO_INVALID_DESCRIPTOR;
@@ -126,9 +126,9 @@ namespace avocado
 		{
 #if USE_CPU
 			if (m_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
-				cpuDestroyTensorDescriptor(m_tensor_descriptor);
+			cpuDestroyTensorDescriptor(m_tensor_descriptor);
 			if (m_memory_descriptor != AVOCADO_INVALID_DESCRIPTOR)
-				cpuDestroyMemoryDescriptor(m_memory_descriptor);
+			cpuDestroyMemoryDescriptor(m_memory_descriptor);
 #elif USE_CUDA
 			if (m_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
 				cudaDestroyTensorDescriptor(m_tensor_descriptor);
@@ -136,9 +136,9 @@ namespace avocado
 				cudaDestroyMemoryDescriptor(m_memory_descriptor);
 #elif USE_OPENCL
 			if (m_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
-				openclDestroyTensorDescriptor(m_tensor_descriptor);
+			openclDestroyTensorDescriptor(m_tensor_descriptor);
 			if (m_memory_descriptor != AVOCADO_INVALID_DESCRIPTOR)
-				openclDestroyMemoryDescriptor(m_memory_descriptor);
+			openclDestroyMemoryDescriptor(m_memory_descriptor);
 #endif
 			if (m_ref_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
 				refDestroyTensorDescriptor(m_ref_tensor_descriptor);
@@ -227,9 +227,10 @@ namespace avocado
 #if USE_CPU
 					std::memcpy(cpuGetMemoryPointer(m_memory_descriptor), refGetMemoryPointer(m_ref_memory_descriptor), sizeInBytes());
 #elif USE_CUDA
-					cudaCopyMemoryFromHost(cudaGetDefaultContext(m_device_index), m_memory_descriptor, dst_offset, refGetMemoryPointer(m_ref_memory_descriptor), sizeInBytes());
+					cudaCopyMemoryFromHost(cudaGetDefaultContext(m_device_index), m_memory_descriptor, 0, refGetMemoryPointer(m_ref_memory_descriptor),
+							sizeInBytes());
 #elif USE_OPENCL
-					openclCopyMemoryFromHost(openclGetDefaultContext(m_device_index), m_memory_descriptor, dst_offset, refGetMemoryPointer(m_ref_memory_descriptor), sizeInBytes());
+					openclCopyMemoryFromHost(openclGetDefaultContext(m_device_index), m_memory_descriptor, 0, refGetMemoryPointer(m_ref_memory_descriptor), sizeInBytes());
 #endif
 					break;
 				}
@@ -240,9 +241,10 @@ namespace avocado
 #if USE_CPU
 					std::memcpy(refGetMemoryPointer(m_ref_memory_descriptor), cpuGetMemoryPointer(m_memory_descriptor), sizeInBytes());
 #elif USE_CUDA
-					cudaCopyMemoryToHost(cudaGetDefaultContext(m_device_index), m_memory_descriptor, dst_offset, refGetMemoryPointer(m_ref_memory_descriptor), sizeInBytes());
+					cudaCopyMemoryToHost(cudaGetDefaultContext(m_device_index), refGetMemoryPointer(m_ref_memory_descriptor), m_memory_descriptor, 0,
+							sizeInBytes());
 #elif USE_OPENCL
-					openclCopyMemoryToHost(openclGetDefaultContext(m_device_index), m_memory_descriptor, dst_offset, refGetMemoryPointer(m_ref_memory_descriptor), sizeInBytes());
+					openclCopyMemoryToHost(openclGetDefaultContext(m_device_index), refGetMemoryPointer(m_ref_memory_descriptor),m_memory_descriptor, 0, sizeInBytes());
 #endif
 					break;
 				}
@@ -279,7 +281,7 @@ namespace avocado
 		}
 		void TensorWrapper::copy_data_from_cpu(size_t dst_offset, const void *src, size_t count)
 		{
-			std::memcpy(refGetMemoryPointer(m_ref_memory_descriptor), src, sizeInBytes());
+			std::memcpy(reinterpret_cast<int8_t*>(refGetMemoryPointer(m_ref_memory_descriptor)) + dst_offset, src, count);
 #if USE_CPU
 			std::memcpy(reinterpret_cast<int8_t*>(cpuGetMemoryPointer(m_memory_descriptor)) + dst_offset, src, count);
 #elif USE_CUDA
@@ -294,12 +296,141 @@ namespace avocado
 #if USE_CPU
 			cpuSetMemory(cpuGetDefaultContext(), m_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
 #elif USE_CUDA
-			cudaSetMemory(cpuGetDefaultContext(m_device_index), m_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
+			cudaSetMemory(cudaGetDefaultContext(m_device_index), m_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
 #elif USE_OPENCL
-			openclSetMemory(cpuGetDefaultContext(m_device_index), m_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
+			openclSetMemory(openclGetDefaultContext(m_device_index), m_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
 #endif
 		}
 
+		OptimizerWrapper::OptimizerWrapper(avDeviceIndex_t device)
+		{
+#if USE_CPU
+			cpuCreateOptimizerDescriptor(&m_desc);
+#elif USE_CUDA
+			cudaCreateOptimizerDescriptor(&m_desc);
+#elif USE_OPENCL
+			openclCreateOptimizerDescriptor(&m_desc);
+#endif
+			refCreateOptimizerDescriptor(&m_ref_desc);
+		}
+		OptimizerWrapper::OptimizerWrapper(OptimizerWrapper &&other) noexcept :
+		m_desc(other.m_desc),
+		m_ref_desc(other.m_ref_desc)
+		{
+			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
+		}
+		OptimizerWrapper& OptimizerWrapper::operator=(OptimizerWrapper &&other) noexcept
+		{
+			std::swap(this->m_desc, other.m_desc);
+			std::swap(this->m_ref_desc, other.m_ref_desc);
+			return *this;
+		}
+		OptimizerWrapper::~OptimizerWrapper()
+		{
+			if (m_desc != AVOCADO_INVALID_DESCRIPTOR)
+			{
+#if USE_CPU
+				cpuDestroyOptimizerDescriptor(m_desc);
+#elif USE_CUDA
+				cudaDestroyOptimizerDescriptor(m_desc);
+#elif USE_OPENCL
+				openclDestroyOptimizerDescriptor(m_desc);
+#endif
+			}
+			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
+				refDestroyOptimizerDescriptor(m_ref_desc);
+		}
+		void OptimizerWrapper::set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags)
+		{
+#if USE_CPU
+			cpuSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+#elif USE_CUDA
+//			cudaSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+#elif USE_OPENCL
+			openclSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+#endif
+			refSetOptimizerDescriptor(m_ref_desc, type, learningRate, coefficients.data(), flags.data());
+		}
+		size_t OptimizerWrapper::getWorkspaceSize(const TensorWrapper &weights)
+		{
+			avSize_t result;
+			refGetOptimizerWorkspaceSize(m_ref_desc, weights.getRefDescriptor(), &result);
+			return result;
+		}
+
+		ConvolutionWrapper::ConvolutionWrapper(avDeviceIndex_t device, int nbDims) :
+				nbDims(nbDims)
+		{
+#if USE_CPU
+			cpuCreateConvolutionDescriptor(&m_desc);
+#elif USE_CUDA
+			cudaCreateConvolutionDescriptor(&m_desc);
+#elif USE_OPENCL
+			openclCreateConvolutionDescriptor(&m_desc);
+#endif
+			refCreateConvolutionDescriptor(&m_ref_desc);
+		}
+		ConvolutionWrapper::ConvolutionWrapper(ConvolutionWrapper &&other) noexcept :
+		nbDims(other.nbDims),
+		m_desc(other.m_desc),
+		m_ref_desc(other.m_ref_desc)
+		{
+			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
+		}
+		ConvolutionWrapper& ConvolutionWrapper::operator=(ConvolutionWrapper &&other) noexcept
+		{
+			std::swap(this->nbDims, other.nbDims);
+			std::swap(this->m_desc, other.m_desc);
+			std::swap(this->m_ref_desc, other.m_ref_desc);
+			return *this;
+		}
+		ConvolutionWrapper::~ConvolutionWrapper()
+		{
+			if (m_desc != AVOCADO_INVALID_DESCRIPTOR)
+			{
+#if USE_CPU
+				cpuDestroyConvolutionDescriptor(m_desc);
+#elif USE_CUDA
+				cudaDestroyConvolutionDescriptor(m_desc);
+#elif USE_OPENCL
+				openclDestroyConvolutionDescriptor(m_desc);
+#endif
+			}
+			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
+				refDestroyConvolutionDescriptor(m_ref_desc);
+		}
+		void ConvolutionWrapper::set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &padding,
+				const std::array<int, 3> &strides, const std::array<int, 3> &dilation, int groups, const void *paddingValue)
+		{
+#if USE_CPU
+			cpuSetConvolutionDescriptor(m_desc, algo, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+#elif USE_CUDA
+			cudaSetConvolutionDescriptor(m_desc, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+#elif USE_OPENCL
+			openclSetConvolutionDescriptor(m_desc, algo, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+#endif
+			refSetConvolutionDescriptor(m_ref_desc, algo, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+		}
+		std::vector<int> ConvolutionWrapper::getOutputShape(const TensorWrapper &input, const TensorWrapper &weights)
+		{
+#if USE_CPU
+			cpu::TensorDescriptor tmp = cpu::getConvolution(m_desc).getOutputShape(cpu::getTensor(input.getDescriptor()),
+					cpu::getTensor(weights.getDescriptor()));
+#elif USE_CUDA
+			cuda::TensorDescriptor tmp = cuda::getConvolution(m_desc).getOutputShape(cuda::getTensor(input.getDescriptor()),
+					cuda::getTensor(weights.getDescriptor()));
+#elif USE_OPENCL
+			opencl::TensorDescriptor tmp = opencl::getConvolution(m_desc).getOutputShape(opencl::getTensor(input.getDescriptor()),
+					opencl::getTensor(weights.getDescriptor()));
+#endif
+			int size;
+			tmp.get(nullptr, &size, nullptr);
+			std::vector<int> result(size);
+			tmp.get(nullptr, nullptr, result.data());
+			return result;
+		}
 	} /* namespace backend */
 } /* namespace avocado */
 

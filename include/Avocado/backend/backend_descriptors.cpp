@@ -16,6 +16,41 @@
 #include <cstring>
 #include <cassert>
 
+namespace
+{
+	std::string dtype_to_string(avocado::backend::avDataType_t dtype)
+	{
+		switch (dtype)
+		{
+			default:
+			case avocado::backend::AVOCADO_DTYPE_UNKNOWN:
+				return "UNKNOWN";
+			case avocado::backend::AVOCADO_DTYPE_UINT8:
+				return "UINT8";
+			case avocado::backend::AVOCADO_DTYPE_INT8:
+				return "INT8";
+			case avocado::backend::AVOCADO_DTYPE_INT16:
+				return "INT16";
+			case avocado::backend::AVOCADO_DTYPE_INT32:
+				return "INT32";
+			case avocado::backend::AVOCADO_DTYPE_INT64:
+				return "INT64";
+			case avocado::backend::AVOCADO_DTYPE_FLOAT16:
+				return "FLOAT16";
+			case avocado::backend::AVOCADO_DTYPE_BFLOAT16:
+				return "BFLOAT16";
+			case avocado::backend::AVOCADO_DTYPE_FLOAT32:
+				return "FLOAT32";
+			case avocado::backend::AVOCADO_DTYPE_FLOAT64:
+				return "FLOAT64";
+			case avocado::backend::AVOCADO_DTYPE_COMPLEX32:
+				return "COMPLEX32";
+			case avocado::backend::AVOCADO_DTYPE_COMPLEX64:
+				return "COMPLEX64";
+		}
+	}
+}
+
 namespace avocado
 {
 	namespace backend
@@ -27,11 +62,11 @@ namespace avocado
 		namespace cuda
 		{
 #elif USE_OPENCL
-		namespace opencl
-		{
+			namespace opencl
+			{
 #else
-		namespace reference
-		{
+				namespace reference
+				{
 #endif
 
 			avDeviceType_t get_device_type(av_int64 descriptor) noexcept
@@ -116,12 +151,24 @@ namespace avocado
 			/*
 			 * MemoryDescriptor
 			 */
+
+#if USE_CUDA or USE_OPENCL
+			MemoryDescriptor::MemoryDescriptor(avDeviceIndex_t index, avSize_t sizeInBytes)
+			{
+				create(index, sizeInBytes);
+			}
+#else
+			MemoryDescriptor::MemoryDescriptor(avSize_t sizeInBytes)
+			{
+				create(sizeInBytes);
+			}
+#endif
+			MemoryDescriptor::MemoryDescriptor(const MemoryDescriptor &other, avSize_t size, avSize_t offset)
+			{
+				create(other, size, offset);
+			}
 			MemoryDescriptor::MemoryDescriptor(MemoryDescriptor &&other) :
-					m_data(other.m_data),
-					m_device_index(other.m_device_index),
-					m_size(other.m_size),
-					m_offset(other.m_offset),
-					m_is_owning(other.m_is_owning)
+					m_data(other.m_data), m_device_index(other.m_device_index), m_size(other.m_size), m_offset(other.m_offset), m_is_owning(other.m_is_owning)
 			{
 #if USE_OPENCL
 #else
@@ -198,7 +245,7 @@ namespace avocado
 			void MemoryDescriptor::create(avSize_t sizeInBytes)
 			{
 				if (sizeInBytes > 0)
-					m_data = new uint8_t[sizeInBytes];
+					m_data = new int8_t[sizeInBytes];
 				else
 					m_data = nullptr;
 				m_device_index = 0;
@@ -212,14 +259,16 @@ namespace avocado
 				if (other.m_is_owning == false)
 					throw std::logic_error("cannot create memory view from non-owning memory descriptor");
 				if (other.m_size < offset + size)
-					throw std::logic_error("the view would extend beyond the original tensor");
+					throw std::logic_error(
+							"the view would extend beyond the original tensor : " + std::to_string(other.m_size) + " < " + std::to_string(offset) + "+"
+									+ std::to_string(size));
 #if USE_OPENCL
 #else
 				m_data = other.m_data + offset;
 #endif
 				m_device_index = other.m_device_index;
 				m_size = size;
-				m_offset = offset;
+				m_offset = offset; // offset is added twice in data<T>()
 				m_is_owning = false;
 			}
 			void MemoryDescriptor::destroy()
@@ -237,7 +286,7 @@ namespace avocado
 #elif USE_OPENCL
 #else
 				if (m_is_owning)
-					delete[] m_data;
+				delete[] m_data;
 				m_data = nullptr;
 #endif
 				m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
@@ -262,13 +311,10 @@ namespace avocado
 			 */
 			ContextDescriptor::ContextDescriptor(ContextDescriptor &&other) :
 #if USE_CUDA
-					m_stream(other.m_stream),
-					m_handle(other.m_handle),
+							m_stream(other.m_stream), m_handle(other.m_handle),
 #elif USE_OPENCL
 #endif
-					m_device_index(other.m_device_index),
-					m_workspace(std::move(other.m_workspace)),
-					m_workspace_size(other.m_workspace_size)
+							m_device_index(other.m_device_index), m_workspace(std::move(other.m_workspace)), m_workspace_size(other.m_workspace_size)
 			{
 #if USE_CUDA
 				other.m_stream = nullptr;
@@ -367,7 +413,7 @@ namespace avocado
 				m_workspace_size = 0;
 				m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
 			}
-			MemoryDescriptor& ContextDescriptor::getWorkspace()
+			MemoryDescriptor& ContextDescriptor::getWorkspace() const
 			{
 				if (static_cast<bool>(m_workspace) == false)
 				{
@@ -405,11 +451,12 @@ namespace avocado
 			 * TensorDescriptor
 			 */
 			TensorDescriptor::TensorDescriptor(std::initializer_list<int> dimensions, avDataType_t dtype) :
-					m_number_of_dimensions(dimensions.size()),
-					m_dtype(dtype)
+					m_number_of_dimensions(dimensions.size()), m_dtype(dtype)
 			{
 				m_dimensions.fill(0);
 				m_strides.fill(0);
+				std::memcpy(m_dimensions.data(), dimensions.begin(), sizeof(int) * dimensions.size());
+				setup_stride();
 			}
 			std::string TensorDescriptor::className()
 			{
@@ -417,6 +464,8 @@ namespace avocado
 			}
 			void TensorDescriptor::create()
 			{
+				m_dimensions.fill(0);
+				m_strides.fill(0);
 			}
 			void TensorDescriptor::destroy()
 			{
@@ -441,6 +490,14 @@ namespace avocado
 					nbDims[0] = m_number_of_dimensions;
 				if (dimensions != nullptr)
 					std::memcpy(dimensions, m_dimensions.data(), sizeof(int) * m_number_of_dimensions);
+			}
+			int& TensorDescriptor::operator[](int index)
+			{
+				return m_dimensions[index];
+			}
+			int TensorDescriptor::operator[](int index) const
+			{
+				return m_dimensions[index];
 			}
 			int TensorDescriptor::dimension(int index) const
 			{
@@ -525,6 +582,27 @@ namespace avocado
 						return false;
 				return true;
 			}
+			std::string TensorDescriptor::toString() const
+			{
+				std::string result = std::string("Tensor<") + dtype_to_string(m_dtype) + ">[";
+				for (int i = 0; i < m_number_of_dimensions; i++)
+				{
+					if (i > 0)
+						result += ", ";
+					result += std::to_string(m_dimensions[i]);
+				}
+				result += "] on ";
+#if USE_CPU
+				result += "CPU";
+#elif USE_CUDA
+				result += "CUDA";
+#elif USE_OPENCL
+				result += "OPENCL";
+#else
+				result += "reference";
+#endif
+				return result;
+			}
 			//private
 			void TensorDescriptor::setup_stride()
 			{
@@ -555,11 +633,12 @@ namespace avocado
 			{
 				return "ConvolutionDescriptor";
 			}
-			void ConvolutionDescriptor::set(avConvolutionMode_t mode, int nbDims, const int strides[], const int padding[], const int dilation[],
-					int groups, const void *paddingValue)
+			void ConvolutionDescriptor::set(avConvolutionAlgorithm_t algorithm, avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[],
+					const int dilation[], int groups, const void *paddingValue)
 			{
 				if (nbDims < 0 or nbDims > 3)
 					throw std::invalid_argument("");
+				this->algorithm = algorithm;
 				this->mode = mode;
 				dimensions = nbDims;
 				if (strides != nullptr)
@@ -567,15 +646,17 @@ namespace avocado
 				if (padding != nullptr)
 					std::memcpy(this->padding.data(), padding, sizeof(int) * dimensions);
 				if (dilation != nullptr)
-					std::memcpy(this->stride.data(), dilation, sizeof(int) * dimensions);
+					std::memcpy(this->dilation.data(), dilation, sizeof(int) * dimensions);
 
 				this->groups = groups;
 				if (paddingValue != nullptr)
 					std::memcpy(this->padding_value.data(), paddingValue, sizeof(int8_t) * padding_value.size());
 			}
-			void ConvolutionDescriptor::get(avConvolutionMode_t *mode, int *nbDims, int strides[], int padding[], int dilation[], int *groups,
-					void *paddingValue) const
+			void ConvolutionDescriptor::get(avConvolutionAlgorithm_t *algorithm, avConvolutionMode_t *mode, int *nbDims, int padding[], int strides[],
+					int dilation[], int *groups, void *paddingValue) const
 			{
+				if (algorithm != nullptr)
+					algorithm[0] = this->algorithm;
 				if (mode != nullptr)
 					mode[0] = this->mode;
 				if (nbDims != nullptr)
@@ -596,6 +677,63 @@ namespace avocado
 			{
 				return std::all_of(padding_value.begin(), padding_value.end(), [](uint8_t x)
 				{	return x == 0u;});
+			}
+			TensorDescriptor ConvolutionDescriptor::getOutputShape(const TensorDescriptor &xDesc, const TensorDescriptor &wDesc) const
+			{
+				std::array<int, AVOCADO_MAX_TENSOR_DIMENSIONS> shape;
+				shape[0] = xDesc.firstDim(); // batch size
+				for (int i = 0; i < dimensions; i++)
+					shape[1 + i] = 1 + (xDesc.dimension(1 + i) - 2 * padding[i] - (((wDesc.dimension(1 + i) - 1) * dilation[i]) + 1)) / stride[i];
+				shape[xDesc.nbDims() - 1] = wDesc.firstDim(); // output filters
+
+				TensorDescriptor result;
+				result.set(xDesc.dtype(), xDesc.nbDims(), shape.data());
+				return result;
+			}
+			bool ConvolutionDescriptor::isStrided() const noexcept
+			{
+				for (int i = 0; i < dimensions; i++)
+					if (stride[i] > 1)
+						return true;
+				return false;
+			}
+			bool ConvolutionDescriptor::isDilated() const noexcept
+			{
+				for (int i = 0; i < dimensions; i++)
+					if (dilation[i] > 1)
+						return true;
+				return false;
+			}
+			std::string ConvolutionDescriptor::toString() const
+			{
+				std::string result;
+				if (mode == AVOCADO_CONVOLUTION_MODE)
+					result += "convolution : ";
+				else
+					result += "cross-correlation : ";
+				result += "padding = [";
+				for (int i = 0; i < dimensions; i++)
+				{
+					if (i > 0)
+						result += ", ";
+					result += std::to_string(padding[i]);
+				}
+				result += "], strides = [";
+				for (int i = 0; i < dimensions; i++)
+				{
+					if (i > 0)
+						result += ", ";
+					result += std::to_string(stride[i]);
+				}
+				result += "], dilation = [";
+				for (int i = 0; i < dimensions; i++)
+				{
+					if (i > 0)
+						result += ", ";
+					result += std::to_string(dilation[i]);
+				}
+				result += "], groups = " + std::to_string(groups);
+				return result;
 			}
 
 			/*
@@ -632,48 +770,30 @@ namespace avocado
 			{
 				return "OptimizerDescriptor";
 			}
-			void OptimizerDescriptor::set_sgd(double learningRate, bool useMomentum, bool useNesterov, double beta1)
+			void OptimizerDescriptor::set(avOptimizerType_t optimizerType, double learningRate, const double coefficients[], const bool flags[])
 			{
-				this->type = AVOCADO_OPTIMIZER_SGD;
-				this->learning_rate = learningRate;
-				this->coef[0] = beta1;
-				this->flags[0] = useMomentum;
-				this->flags[1] = useNesterov;
-			}
-			void OptimizerDescriptor::set_adam(double learningRate, double beta1, double beta2)
-			{
-				this->type = AVOCADO_OPTIMIZER_SGD;
-				this->learning_rate = learningRate;
-				this->coef[0] = beta1;
-				this->coef[1] = beta2;
-			}
-			void OptimizerDescriptor::get_type(avOptimizerType_t *type) const
-			{
-				if (type == nullptr)
+				if (coefficients == nullptr)
 					throw std::invalid_argument("");
-				type[0] = this->type;
+				if (flags == nullptr)
+					throw std::invalid_argument("");
+
+				this->type = optimizerType;
+				this->learning_rate = learningRate;
+				std::memcpy(this->coef.data(), coefficients, sizeof(this->coef));
+				std::memcpy(this->flags.data(), flags, sizeof(this->flags));
 			}
-			void OptimizerDescriptor::get_sgd(double *learningRate, bool *useMomentum, bool *useNesterov, double *beta1) const
+			void OptimizerDescriptor::get(avOptimizerType_t *optimizerType, double *learningRate, double coefficients[], bool flags[])
 			{
+				if (optimizerType != nullptr)
+					optimizerType[0] = this->type;
 				if (learningRate != nullptr)
-					learningRate[0] = learning_rate;
-				if (beta1 != nullptr)
-					beta1[0] = this->coef[0];
-				if (useMomentum != nullptr)
-					useMomentum[0] = this->flags[0];
-				if (useNesterov != nullptr)
-					useNesterov[0] = this->flags[1];
+					learningRate[0] = this->learning_rate;
+				if (coefficients != nullptr)
+					std::memcpy(coefficients, this->coef.data(), sizeof(this->coef));
+				if (flags != nullptr)
+					std::memcpy(flags, this->flags.data(), sizeof(this->flags));
 			}
-			void OptimizerDescriptor::get_adam(double *learningRate, double *beta1, double *beta2) const
-			{
-				if (learningRate != nullptr)
-					learningRate[0] = learning_rate;
-				if (beta1 != nullptr)
-					beta1[0] = this->coef[0];
-				if (beta2 != nullptr)
-					beta2[0] = this->coef[1];
-			}
-			void OptimizerDescriptor::get_workspace_size(int *result, const TensorDescriptor &wDesc) const
+			void OptimizerDescriptor::get_workspace_size(avSize_t *result, const TensorDescriptor &wDesc) const
 			{
 				if (result == nullptr)
 					throw std::invalid_argument("");
@@ -719,14 +839,15 @@ namespace avocado
 					int nb_devices = 0;
 					cudaError_t status = cudaGetDeviceCount(&nb_devices);
 					if (status != cudaSuccess)
-						nb_devices = 0;
+					nb_devices = 0;
 					try
 					{
 						DescriptorPool<ContextDescriptor> tmp;
 						for (int i = 0; i < nb_devices; i++)
-							tmp.create(i, true); // reserve descriptors for default contexts
+						tmp.create(i, true); // reserve descriptors for default contexts
 						return tmp;
-					} catch (std::exception &e)
+					}
+					catch (std::exception &e)
 					{
 						return DescriptorPool<ContextDescriptor>();
 					}
@@ -751,7 +872,8 @@ namespace avocado
 						DescriptorPool<ContextDescriptor> tmp;
 						tmp.create(); // reserve descriptor 0 for default context
 						return tmp;
-					} catch (std::exception &e)
+					}
+					catch (std::exception &e)
 					{
 						return DescriptorPool<ContextDescriptor>();
 					}
@@ -787,6 +909,35 @@ namespace avocado
 			DropoutDescriptor& getDropout(avDropoutDescriptor_t desc)
 			{
 				return getPool<DropoutDescriptor>().get(desc);
+			}
+
+			const MemoryDescriptor& const_getMemory(avMemoryDescriptor_t desc)
+			{
+				return getPool<MemoryDescriptor>().const_get(desc);
+			}
+			const ContextDescriptor& const_getContext(avContextDescriptor_t desc)
+			{
+				return getPool<ContextDescriptor>().const_get(desc);
+			}
+			const TensorDescriptor& const_getTensor(avTensorDescriptor_t desc)
+			{
+				return getPool<TensorDescriptor>().const_get(desc);
+			}
+			const ConvolutionDescriptor& const_getConvolution(avConvolutionDescriptor_t desc)
+			{
+				return getPool<ConvolutionDescriptor>().const_get(desc);
+			}
+			const PoolingDescriptor& const_getPooling(avPoolingDescriptor_t desc)
+			{
+				return getPool<PoolingDescriptor>().const_get(desc);
+			}
+			const OptimizerDescriptor& const_getOptimizer(avOptimizerDescriptor_t desc)
+			{
+				return getPool<OptimizerDescriptor>().const_get(desc);
+			}
+			const DropoutDescriptor& const_getDropout(avDropoutDescriptor_t desc)
+			{
+				return getPool<DropoutDescriptor>().const_get(desc);
 			}
 
 			bool is_transpose(avGemmOperation_t op) noexcept
@@ -869,21 +1020,9 @@ namespace avocado
 			{
 				return op == AVOCADO_UNARY_OP_LOGICAL_NOT;
 			}
-
-			TensorDescriptor getConvolutionOutputShape(const ConvolutionDescriptor &config, const TensorDescriptor &inputDesc,
-					const TensorDescriptor &filterDesc)
+			bool is_logical(avReduceOp_t op) noexcept
 			{
-				std::array<int, AVOCADO_MAX_TENSOR_DIMENSIONS> shape;
-				shape[0] = inputDesc.firstDim(); // batch size
-				for (int i = 0; i < inputDesc.nbDims() - 2; i++)
-					shape[1 + i] = 1
-							+ (inputDesc.dimension(1 + i) - 2 * config.padding[i] - (((filterDesc.dimension(1 + i) - 1) * config.dilation[i]) + 1))
-									/ config.stride[i];
-				shape[inputDesc.nbDims() - 1] = filterDesc.firstDim(); // output filters
-
-				TensorDescriptor result;
-				result.set(inputDesc.dtype(), inputDesc.nbDims(), shape.data());
-				return result;
+				return (op == AVOCADO_REDUCE_LOGICAL_AND) or (op == AVOCADO_REDUCE_LOGICAL_OR);
 			}
 
 		} /* namespace cpu/cuda/opencl/reference */

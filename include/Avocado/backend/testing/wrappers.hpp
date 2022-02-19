@@ -12,6 +12,7 @@
 
 #include <initializer_list>
 #include <vector>
+#include <array>
 #include <stddef.h>
 #include <memory>
 
@@ -118,6 +119,55 @@ namespace avocado
 				void set_pattern(const void *pattern, size_t patternSize);
 		};
 
+		class OptimizerWrapper
+		{
+			private:
+				avOptimizerDescriptor_t m_desc;
+				avOptimizerDescriptor_t m_ref_desc;
+			public:
+				OptimizerWrapper(avDeviceIndex_t device);
+				OptimizerWrapper(const OptimizerWrapper &other) = delete;
+				OptimizerWrapper(OptimizerWrapper &&other) noexcept;
+				OptimizerWrapper& operator=(const OptimizerWrapper &other) = delete;
+				OptimizerWrapper& operator=(OptimizerWrapper &&other) noexcept;
+				~OptimizerWrapper();
+				avOptimizerDescriptor_t getDescriptor() const noexcept
+				{
+					return m_desc;
+				}
+				avOptimizerDescriptor_t getRefDescriptor() const noexcept
+				{
+					return m_ref_desc;
+				}
+				void set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
+				size_t getWorkspaceSize(const TensorWrapper &weights);
+		};
+
+		class ConvolutionWrapper
+		{
+			private:
+				int nbDims;
+				avOptimizerDescriptor_t m_desc;
+				avOptimizerDescriptor_t m_ref_desc;
+			public:
+				ConvolutionWrapper(avDeviceIndex_t device, int nbDims);
+				ConvolutionWrapper(const ConvolutionWrapper &other) = delete;
+				ConvolutionWrapper(ConvolutionWrapper &&other) noexcept;
+				ConvolutionWrapper& operator=(const ConvolutionWrapper &other) = delete;
+				ConvolutionWrapper& operator=(ConvolutionWrapper &&other) noexcept;
+				~ConvolutionWrapper();
+				avConvolutionDescriptor_t getDescriptor() const noexcept
+				{
+					return m_desc;
+				}
+				avConvolutionDescriptor_t getRefDescriptor() const noexcept
+				{
+					return m_ref_desc;
+				}
+				void set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &padding,
+						const std::array<int, 3> &strides, const std::array<int, 3> &dilation, int groups, const void *paddingValue);
+				std::vector<int> getOutputShape(const TensorWrapper &input, const TensorWrapper &weights);
+		};
 
 	} /* namespace backend */
 } /* namespace avocado */

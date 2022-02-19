@@ -10,18 +10,21 @@
 #include "../backend_descriptors.hpp"
 #if USE_CPU
 #  include <CpuBackend/cpu_backend.h>
+#  include "../src/vectors/simd_utils.hpp"
 #elif USE_CUDA
 #  include <CudaBackend/cuda_backend.h>
+#  include "../src/numbers/numbers.cuh"
 #elif USE_OPENCL
 #  include <OpenCLBackend/opencl_backend.h>
 #endif
 #include <ReferenceBackend/reference_backend.h>
 
 #include <complex>
+#include <cmath>
 #include <memory>
 #include <iostream>
 #include <cassert>
-#include "../src/vectors/simd_utils.hpp"
+#include <gtest/gtest.h>
 
 namespace
 {
@@ -121,13 +124,51 @@ namespace
 		stream << tmp;
 		return stream;
 	}
+
+	template<typename T>
+	void print(const std::vector<T> &vec)
+	{
+		for (size_t i = 0; i < vec.size(); i++)
+			std::cout << vec[i] << ' ';
+		std::cout << '\n';
+	}
+
+	int dtypeSize(avDataType_t dtype) noexcept
+	{
+		switch (dtype)
+		{
+			default:
+			case AVOCADO_DTYPE_UNKNOWN:
+				return 0;
+			case AVOCADO_DTYPE_UINT8:
+			case AVOCADO_DTYPE_INT8:
+				return 1;
+			case AVOCADO_DTYPE_INT16:
+			case AVOCADO_DTYPE_FLOAT16:
+			case AVOCADO_DTYPE_BFLOAT16:
+				return 2;
+			case AVOCADO_DTYPE_INT32:
+			case AVOCADO_DTYPE_FLOAT32:
+				return 4;
+			case AVOCADO_DTYPE_INT64:
+			case AVOCADO_DTYPE_FLOAT64:
+			case AVOCADO_DTYPE_COMPLEX32:
+				return 8;
+			case AVOCADO_DTYPE_COMPLEX64:
+				return 16;
+		}
+	}
 }
 
 namespace avocado
 {
 	namespace backend
 	{
+#if USE_CPU
 		bool supportsType(avDataType_t dtype)
+#else
+		bool supportsType(avDeviceIndex_t deviceIndex, avDataType_t dtype)
+#endif
 		{
 			switch (dtype)
 			{
@@ -143,27 +184,43 @@ namespace avocado
 				case AVOCADO_DTYPE_FLOAT16:
 				{
 					bool result;
+#if USE_CPU
 					cpuGetDeviceProperty(AVOCADO_DEVICE_SUPPORTS_HALF_PRECISION, &result);
+#elif USE_CUDA
+					cudaGetDeviceProperty(deviceIndex, AVOCADO_DEVICE_SUPPORTS_HALF_PRECISION, &result);
+#endif
 					return result;
 				}
 				case AVOCADO_DTYPE_BFLOAT16:
 				{
 					bool result;
+#if USE_CPU
 					cpuGetDeviceProperty(AVOCADO_DEVICE_SUPPORTS_BFLOAT16, &result);
+#elif USE_CUDA
+					cudaGetDeviceProperty(deviceIndex, AVOCADO_DEVICE_SUPPORTS_BFLOAT16, &result);
+#endif
 					return result;
 				}
 				case AVOCADO_DTYPE_FLOAT32:
 				case AVOCADO_DTYPE_COMPLEX32:
 				{
 					bool result;
+#if USE_CPU
 					cpuGetDeviceProperty(AVOCADO_DEVICE_SUPPORTS_SINGLE_PRECISION, &result);
+#else
+					cudaGetDeviceProperty(deviceIndex, AVOCADO_DEVICE_SUPPORTS_SINGLE_PRECISION, &result);
+#endif
 					return result;
 				}
 				case AVOCADO_DTYPE_FLOAT64:
 				case AVOCADO_DTYPE_COMPLEX64:
 				{
 					bool result;
+#if USE_CPU
 					cpuGetDeviceProperty(AVOCADO_DEVICE_SUPPORTS_DOUBLE_PRECISION, &result);
+#else
+					cudaGetDeviceProperty(deviceIndex, AVOCADO_DEVICE_SUPPORTS_DOUBLE_PRECISION, &result);
+#endif
 					return result;
 				}
 			}
@@ -173,7 +230,7 @@ namespace avocado
 		{
 #if USE_CPU
 			if (str == "CPU" || str == "cpu")
-				return true;
+			return true;
 #elif USE_CUDA
 			if (str.substr(0, 5) == "CUDA:" || str.substr(0, 5) == "cuda:")
 			{
@@ -264,10 +321,8 @@ namespace avocado
 				{
 					std::unique_ptr<float[]> tmp2_lhs = std::make_unique<float[]>(lhs.volume());
 					std::unique_ptr<float[]> tmp2_rhs = std::make_unique<float[]>(rhs.volume());
-					refChangeTypeHost(0ll, tmp2_lhs.get(), AVOCADO_DTYPE_FLOAT32, tmp_lhs.get(), static_cast<avDataType_t>(lhs.dtype()),
-							lhs.volume());
-					refChangeTypeHost(0ll, tmp2_rhs.get(), AVOCADO_DTYPE_FLOAT32, tmp_rhs.get(), static_cast<avDataType_t>(rhs.dtype()),
-							rhs.volume());
+					refChangeTypeHost(0ll, tmp2_lhs.get(), AVOCADO_DTYPE_FLOAT32, tmp_lhs.get(), static_cast<avDataType_t>(lhs.dtype()), lhs.volume());
+					refChangeTypeHost(0ll, tmp2_rhs.get(), AVOCADO_DTYPE_FLOAT32, tmp_rhs.get(), static_cast<avDataType_t>(rhs.dtype()), rhs.volume());
 					return diff_for_test<float>(tmp2_lhs.get(), tmp2_rhs.get(), lhs.volume());
 				}
 				case AVOCADO_DTYPE_FLOAT32:
@@ -343,7 +398,8 @@ namespace avocado
 				{
 					std::unique_ptr<float[]> tmp2 = std::make_unique<float[]>(tensor.volume());
 					refChangeTypeHost(0ll, tmp2.get(), AVOCADO_DTYPE_FLOAT32, tmp.get(), static_cast<avDataType_t>(tensor.dtype()), tensor.volume());
-					return abs_for_test<float>(tmp2.get(), tensor.volume());
+					abs_for_test<float>(tmp2.get(), tensor.volume());
+					break;
 				}
 				case AVOCADO_DTYPE_FLOAT32:
 					abs_for_test<float>(tmp.get(), tensor.volume());
@@ -384,17 +440,30 @@ namespace avocado
 				}
 				std::cout << "------------------------------------------------------------\n";
 			}
+			if (tensor.numberOfDimensions() == 4)
+			{
+				std::cout << "------------------------------------------------------------\n";
+				for (int b = 0; b < tensor.firstDim(); b++)
+				{
+					std::cout << "--batch " << b << '\n';
+					for (int f = 0; f < tensor.lastDim(); f++)
+					{
+						std::cout << "----channel " << f << '\n';
+						for (int h = 0; h < tensor.dimension(1); h++)
+						{
+							for (int w = 0; w < tensor.dimension(2); w++)
+								std::cout << tensor.get<T>( { b, h, w, f }) << ' ';
+							std::cout << '\n';
+						}
+					}
+				}
+				std::cout << "------------------------------------------------------------\n";
+			}
 		}
 
 		ActivationTester::ActivationTester(avDeviceIndex_t idx, avActivationType_t activation, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				act(activation),
-				input(shape, dtype, idx),
-				gradientOut(shape, dtype, idx),
-				output_baseline(shape, dtype, idx),
-				output_tested(shape, dtype, idx),
-				gradientIn_baseline(shape, dtype, idx),
-				gradientIn_tested(shape, dtype, idx)
+				device_index(idx), act(activation), input(shape, dtype, idx), gradientOut(shape, dtype, idx), output_baseline(shape, dtype, idx), output_tested(
+						shape, dtype, idx), gradientIn_baseline(shape, dtype, idx), gradientIn_tested(shape, dtype, idx)
 		{
 			initForTest(input, 0.0);
 			initForTest(gradientOut, 1.0);
@@ -409,8 +478,8 @@ namespace avocado
 			cpuActivationForward(cpuGetDefaultContext(), act, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory());
 #elif USE_CUDA
-			cudaActivationForward(cudaGetDefaultContext(device_index), act, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
-					output_tested.getMemory());
+			cudaActivationForward(cudaGetDefaultContext(device_index), act, alpha, input.getDescriptor(), input.getMemory(), beta,
+					output_tested.getDescriptor(), output_tested.getMemory());
 #elif USE_OPENCL
 			openclActivationForward(openclGetDefaultContext(device_index), act, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory());
@@ -435,10 +504,10 @@ namespace avocado
 			cpuActivationBackward(0, act, alpha, output_tested.getDescriptor(), output_tested.getMemory(), gradientOut.getDescriptor(),
 					gradientOut.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory());
 #elif USE_CUDA
-			cudaActivationForward(cudaGetDefaultContext(device_index), act, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
-					output_tested.getMemory());
-			cudaActivationBackward(cudaGetDefaultContext(device_index), act, alpha, output_tested.getDescriptor(), output_tested.getMemory(), gradientOut.getDescriptor(),
-					gradientOut.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory());
+			cudaActivationForward(cudaGetDefaultContext(device_index), act, alpha, input.getDescriptor(), input.getMemory(), beta,
+					output_tested.getDescriptor(), output_tested.getMemory());
+			cudaActivationBackward(cudaGetDefaultContext(device_index), act, alpha, output_tested.getDescriptor(), output_tested.getMemory(),
+					gradientOut.getDescriptor(), gradientOut.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory());
 #elif USE_OPENCL
 			openclActivationForward(openclGetDefaultContext(device_index), act, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory());
@@ -449,14 +518,8 @@ namespace avocado
 		}
 
 		SoftmaxTester::SoftmaxTester(avDeviceIndex_t idx, avSoftmaxMode_t mode, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				mode(mode),
-				input(shape, dtype, idx),
-				gradientOut(shape, dtype, idx),
-				output_baseline(shape, dtype, idx),
-				output_tested(shape, dtype, idx),
-				gradientIn_baseline(shape, dtype, idx),
-				gradientIn_tested(shape, dtype, idx)
+				device_index(idx), mode(mode), input(shape, dtype, idx), gradientOut(shape, dtype, idx), output_baseline(shape, dtype, idx), output_tested(
+						shape, dtype, idx), gradientIn_baseline(shape, dtype, idx), gradientIn_tested(shape, dtype, idx)
 		{
 			initForTest(input, 0.0);
 			initForTest(gradientOut, 1.0);
@@ -500,8 +563,8 @@ namespace avocado
 #elif USE_CUDA
 			cudaSoftmaxForward(cudaGetDefaultContext(device_index), mode, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory());
-			cudaSoftmaxBackward(cudaGetDefaultContext(device_index), mode, alpha, output_tested.getDescriptor(), output_tested.getMemory(), gradientOut.getDescriptor(),
-					gradientOut.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory());
+			cudaSoftmaxBackward(cudaGetDefaultContext(device_index), mode, alpha, output_tested.getDescriptor(), output_tested.getMemory(),
+					gradientOut.getDescriptor(), gradientOut.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory());
 #elif USE_OPENCL
 			openclSoftmaxForward(openclGetDefaultContext(device_index), mode, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory());
@@ -513,9 +576,7 @@ namespace avocado
 
 		GemmTester::GemmTester(avDeviceIndex_t idx, int M, int N, int K, avGemmOperation_t opA, avGemmOperation_t opB, avDataType_t C_type,
 				avDataType_t AB_type) :
-				device_index(idx),
-				op_A(opA),
-				op_B(opB)
+				device_index(idx), op_A(opA), op_B(opB)
 		{
 			if (opA == AVOCADO_GEMM_OPERATION_N)
 				A = TensorWrapper( { M, K }, AB_type, device_index);
@@ -540,25 +601,23 @@ namespace avocado
 		}
 		double GemmTester::getDifference(const void *alpha, const void *beta) noexcept
 		{
-			refGemm(0, op_A, op_B, alpha, A.getRefDescriptor(), A.getRefMemory(), B.getRefDescriptor(), B.getRefMemory(), beta,
-					C_baseline.getRefDescriptor(), C_baseline.getRefMemory());
+			refGemm(0, op_A, op_B, alpha, A.getRefDescriptor(), A.getRefMemory(), B.getRefDescriptor(), B.getRefMemory(), beta, C_baseline.getRefDescriptor(),
+					C_baseline.getRefMemory());
 #if USE_CPU
 			cpuGemm(cpuGetDefaultContext(), op_A, op_B, alpha, A.getDescriptor(), A.getMemory(), B.getDescriptor(), B.getMemory(), beta,
 					C_tested.getDescriptor(), C_tested.getMemory());
 #elif USE_CUDA
 			cudaGemm(cudaGetDefaultContext(device_index), op_A, op_B, alpha, A.getDescriptor(), A.getMemory(), B.getDescriptor(), B.getMemory(), beta,
-								C_tested.getDescriptor(), C_tested.getMemory());
+					C_tested.getDescriptor(), C_tested.getMemory());
 #elif USE_OPENCL
 			openclGemm(openclGetDefaultContext(device_index), op_A, op_B, alpha, A.getDescriptor(), A.getMemory(), B.getDescriptor(), B.getMemory(), beta,
-								C_tested.getDescriptor(), C_tested.getMemory());
+					C_tested.getDescriptor(), C_tested.getMemory());
 #endif
 			return diffForTest(C_baseline, C_tested);
 		}
 
 		ConcatTester::ConcatTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				shape(shape),
-				dtype(dtype)
+				device_index(idx), shape(shape), dtype(dtype)
 		{
 		}
 		double ConcatTester::getDifference() noexcept
@@ -587,8 +646,10 @@ namespace avocado
 
 			refConcatTensors(0, output_baseline.getRefDescriptor(), output_baseline.getRefMemory(), desc.data(), mem.data(), 3);
 
-			desc = { input1.getDescriptor(), input2.getDescriptor(), input3.getDescriptor() };
-			mem = { input1.getMemory(), input2.getMemory(), input3.getMemory() };
+			desc =
+			{	input1.getDescriptor(), input2.getDescriptor(), input3.getDescriptor()};
+			mem =
+			{	input1.getMemory(), input2.getMemory(), input3.getMemory()};
 
 #if USE_CPU
 			cpuConcatTensors(cpuGetDefaultContext(), output_tested.getDescriptor(), output_tested.getMemory(), desc.data(), mem.data(), 3);
@@ -602,9 +663,7 @@ namespace avocado
 		}
 
 		SplitTester::SplitTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				shape(shape),
-				dtype(dtype)
+				device_index(idx), shape(shape), dtype(dtype)
 		{
 		}
 		double SplitTester::getDifference() noexcept
@@ -630,13 +689,14 @@ namespace avocado
 
 			std::vector<avTensorDescriptor_t> desc = { output1_baseline.getRefDescriptor(), output2_baseline.getRefDescriptor(),
 					output3_baseline.getRefDescriptor() };
-			std::vector<avMemoryDescriptor_t> mem = { output1_baseline.getRefMemory(), output2_baseline.getRefMemory(),
-					output3_baseline.getRefMemory() };
+			std::vector<avMemoryDescriptor_t> mem = { output1_baseline.getRefMemory(), output2_baseline.getRefMemory(), output3_baseline.getRefMemory() };
 
 			refSplitTensors(0, desc.data(), mem.data(), input.getRefDescriptor(), input.getRefMemory(), 3);
 
-			desc = { output1_tested.getDescriptor(), output2_tested.getDescriptor(), output3_tested.getDescriptor() };
-			mem = { output1_tested.getMemory(), output2_tested.getMemory(), output3_tested.getMemory() };
+			desc =
+			{	output1_tested.getDescriptor(), output2_tested.getDescriptor(), output3_tested.getDescriptor()};
+			mem =
+			{	output1_tested.getMemory(), output2_tested.getMemory(), output3_tested.getMemory()};
 #if USE_CPU
 			cpuSplitTensors(cpuGetDefaultContext(), desc.data(), mem.data(), input.getDescriptor(), input.getMemory(), 3);
 #elif USE_CUDA
@@ -645,14 +705,11 @@ namespace avocado
 			openclSplitTensors(openclGetDefaultContext(device_index), desc.data(), mem.data(), input.getDescriptor(), input.getMemory(), 3);
 #endif
 
-			return diffForTest(output1_baseline, output1_tested) + diffForTest(output2_baseline, output2_tested)
-					+ diffForTest(output3_baseline, output3_tested);
+			return diffForTest(output1_baseline, output1_tested) + diffForTest(output2_baseline, output2_tested) + diffForTest(output3_baseline, output3_tested);
 		}
 
 		TransposeTester::TransposeTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				shape(shape),
-				dtype(dtype)
+				device_index(idx), shape(shape), dtype(dtype)
 		{
 		}
 		double TransposeTester::getDifference(const std::vector<int> &ordering) noexcept
@@ -673,8 +730,8 @@ namespace avocado
 			cpuTranspose(cpuGetDefaultContext(), output_tested.getDescriptor(), output_tested.getMemory(), input.getDescriptor(), input.getMemory(),
 					ordering.data());
 #elif USE_CUDA
-			cudaTranspose(cudaGetDefaultContext(device_index), output_tested.getDescriptor(), output_tested.getMemory(), input.getDescriptor(), input.getMemory(),
-					ordering.data());
+			cudaTranspose(cudaGetDefaultContext(device_index), output_tested.getDescriptor(), output_tested.getMemory(), input.getDescriptor(),
+					input.getMemory(), ordering.data());
 #elif USE_OPENCL
 			openclTranspose(openclGetDefaultContext(device_index), output_tested.getDescriptor(), output_tested.getMemory(), input.getDescriptor(), input.getMemory(),
 					ordering.data());
@@ -683,12 +740,95 @@ namespace avocado
 			return diffForTest(output_baseline, output_tested);
 		}
 
+		ScaleTester::ScaleTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype) :
+				device_index(idx), shape(shape), dtype(dtype)
+		{
+		}
+		double ScaleTester::getDifference(const void *alpha) noexcept
+		{
+			TensorWrapper input(shape, dtype, device_index);
+			initForTest(input, 0.0);
+
+			TensorWrapper output_baseline(shape, dtype, device_index);
+			TensorWrapper output_tested(shape, dtype, device_index);
+
+			refScaleTensor(0, input.getRefDescriptor(), input.getRefMemory(), alpha, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
+#if USE_CPU
+			cpuScaleTensor(cpuGetDefaultContext(), input.getDescriptor(), input.getMemory(), alpha, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#elif USE_CUDA
+//			cudaScaleTensor(cudaGetDefaultContext(device_index), input.getDescriptor(), input.getMemory(), alpha, output_tested.getDescriptor(),
+//					output_tested.getMemory());
+#elif USE_OPENCL
+			openclScaleTensor(openclGetDefaultContext(device_index), input.getDescriptor(), input.getMemory(), alpha, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#endif
+			return diffForTest(output_baseline, output_tested);
+		}
+		AddScalarTester::AddScalarTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype) :
+				device_index(idx), shape(shape), dtype(dtype)
+		{
+		}
+		double AddScalarTester::getDifference(const void *scalar) noexcept
+		{
+			TensorWrapper input(shape, dtype, device_index);
+			initForTest(input, 0.0);
+
+			TensorWrapper output_baseline(shape, dtype, device_index);
+			TensorWrapper output_tested(shape, dtype, device_index);
+
+			refAddScalarToTensor(0, input.getRefDescriptor(), input.getRefMemory(), scalar, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
+#if USE_CPU
+			cpuAddScalarToTensor(cpuGetDefaultContext(), input.getDescriptor(), input.getMemory(), scalar, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#elif USE_CUDA
+//			cudaAddScalarToTensor(cudaGetDefaultContext(device_index), input.getDescriptor(), input.getMemory(), alpha, output_tested.getDescriptor(),
+//					output_tested.getMemory());
+#elif USE_OPENCL
+			openclAddScalarToTensor(openclGetDefaultContext(device_index), input.getDescriptor(), input.getMemory(), alpha, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#endif
+			return diffForTest(output_baseline, output_tested);
+		}
+		AddBiasTester::AddBiasTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype) :
+				AddBiasTester(idx, shape, dtype, dtype, dtype)
+		{
+		}
+		AddBiasTester::AddBiasTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t input_dtype, avDataType_t output_dtype,
+				avDataType_t bias_dtype) :
+				device_index(idx), shape(shape), input_dtype(input_dtype), output_dtype(output_dtype), bias_dtype(bias_dtype)
+		{
+		}
+		double AddBiasTester::getDifference(const void *alpha3, const void *alpha1, const void *alpha2, const void *beta1, const void *beta2) noexcept
+		{
+			avActivationType_t activation = AVOCADO_ACTIVATION_SIGMOID;
+			TensorWrapper input(shape, input_dtype, device_index);
+			TensorWrapper ext(shape, input_dtype, device_index);
+			TensorWrapper bias( { shape.back() }, bias_dtype, device_index);
+			initForTest(input, 0.0);
+			initForTest(ext, 0.5);
+			initForTest(bias, 1.0);
+
+			TensorWrapper output_baseline(shape, output_dtype, device_index);
+			TensorWrapper output_tested(shape, output_dtype, device_index);
+
+			refAddBias(0, alpha3, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, bias.getRefDescriptor(), bias.getRefMemory(),
+					output_baseline.getRefDescriptor(), output_baseline.getRefMemory(), beta1, beta2, ext.getRefMemory(), activation);
+#if USE_CPU
+			cpuAddBias(cpuGetDefaultContext(), alpha3, alpha1, input.getDescriptor(), input.getMemory(), alpha2, bias.getDescriptor(),
+					bias.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), beta1, beta2, ext.getMemory(), activation);
+#elif USE_CUDA
+//			cudaAddBias(cudaGetDefaultContext(device_index), alpha3, alpha1, input.getDescriptor(), input.getMemory(), alpha2, bias.getDescriptor(),
+//					bias.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), beta1, beta2, ext.getMemory(), activation);
+#elif USE_OPENCL
+			openclAddBias(openclGetDefaultContext(device_index), alpha3, alpha1, input.getDescriptor(), input.getMemory(), alpha2, bias.getDescriptor(),
+					bias.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), beta1, beta2, ext.getMemory(), activation);
+#endif
+			return diffForTest(output_baseline, output_tested);
+		}
+
 		UnaryOpTester::UnaryOpTester(avDeviceIndex_t idx, avUnaryOp_t operation, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				op(operation),
-				input(shape, dtype, idx),
-				output_baseline(shape, dtype, idx),
-				output_tested(shape, dtype, idx)
+				device_index(idx), op(operation), input(shape, dtype, idx), output_baseline(shape, dtype, idx), output_tested(shape, dtype, idx)
 		{
 			initForTest(input, 0.0, 2.0);
 			initForTest(output_baseline, 0.1);
@@ -696,8 +836,7 @@ namespace avocado
 		}
 		double UnaryOpTester::getDifference(const void *alpha, const void *beta) noexcept
 		{
-			refUnaryOp(0, op, alpha, input.getRefDescriptor(), input.getRefMemory(), beta, output_baseline.getRefDescriptor(),
-					output_baseline.getRefMemory());
+			refUnaryOp(0, op, alpha, input.getRefDescriptor(), input.getRefMemory(), beta, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
 #if USE_CPU
 			cpuUnaryOp(cpuGetDefaultContext(), op, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory());
@@ -706,20 +845,14 @@ namespace avocado
 					output_tested.getMemory());
 #elif USE_OPENCL
 			openclUnaryOp(openclGetDefaultContext(device_index), op, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
-				output_tested.getMemory());
+					output_tested.getMemory());
 #endif
 			return diffForTest(output_baseline, output_tested);
 		}
 
 		BinaryOpTester::BinaryOpTester(avDeviceIndex_t idx, avBinaryOp_t operation, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				op(operation),
-				input(shape, dtype, idx),
-				input_same(shape, dtype, idx),
-				input_1d( { shape.begin()[shape.size() - 1] }, dtype, idx),
-				input_single( { 1 }, dtype, idx),
-				output_baseline(shape, dtype, idx),
-				output_tested(shape, dtype, idx)
+				device_index(idx), op(operation), input(shape, dtype, idx), input_same(shape, dtype, idx), input_1d( { shape.begin()[shape.size() - 1] }, dtype,
+						idx), input_single( { 1 }, dtype, idx), output_baseline(shape, dtype, idx), output_tested(shape, dtype, idx)
 		{
 			initForTest(input, 0.0, 2.0);
 			initForTest(input_same, 1.0, 2.0);
@@ -731,8 +864,8 @@ namespace avocado
 			initForTest(output_baseline, 0.1);
 			initForTest(output_tested, 0.1);
 
-			refBinaryOp(0, op, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, input_same.getRefDescriptor(),
-					input_same.getRefMemory(), beta, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
+			refBinaryOp(0, op, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, input_same.getRefDescriptor(), input_same.getRefMemory(), beta,
+					output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
 #if USE_CPU
 			cpuBinaryOp(cpuGetDefaultContext(), op, alpha1, input.getDescriptor(), input.getMemory(), alpha2, input_same.getDescriptor(),
 					input_same.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory());
@@ -751,8 +884,8 @@ namespace avocado
 			initForTest(output_baseline, 0.1);
 			initForTest(output_tested, 0.1);
 
-			refBinaryOp(0, op, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, input_1d.getRefDescriptor(), input_1d.getRefMemory(),
-					beta, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
+			refBinaryOp(0, op, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, input_1d.getRefDescriptor(), input_1d.getRefMemory(), beta,
+					output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
 #if USE_CPU
 			cpuBinaryOp(cpuGetDefaultContext(), op, alpha1, input.getDescriptor(), input.getMemory(), alpha2, input_1d.getDescriptor(),
 					input_1d.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory());
@@ -769,8 +902,8 @@ namespace avocado
 		{
 			initForTest(output_baseline, 0.1);
 			initForTest(output_tested, 0.1);
-			refBinaryOp(0, op, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, input_single.getRefDescriptor(),
-					input_single.getRefMemory(), beta, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
+			refBinaryOp(0, op, alpha1, input.getRefDescriptor(), input.getRefMemory(), alpha2, input_single.getRefDescriptor(), input_single.getRefMemory(),
+					beta, output_baseline.getRefDescriptor(), output_baseline.getRefMemory());
 #if USE_CPU
 			cpuBinaryOp(cpuGetDefaultContext(), op, alpha1, input.getDescriptor(), input.getMemory(), alpha2, input_single.getDescriptor(),
 					input_single.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory());
@@ -785,13 +918,8 @@ namespace avocado
 		}
 
 		ReductionTester::ReductionTester(avDeviceIndex_t idx, avReduceOp_t operation, std::initializer_list<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				op(operation),
-				input(shape, dtype, idx),
-				output_baseline_1d( { shape.begin()[shape.size() - 1] }, dtype, idx),
-				output_tested_1d( { shape.begin()[shape.size() - 1] }, dtype, idx),
-				output_baseline_single( { 1 }, dtype, idx),
-				output_tested_single( { 1 }, dtype, idx)
+				device_index(idx), op(operation), input(shape, dtype, idx), output_baseline_1d( { shape.begin()[shape.size() - 1] }, dtype, idx), output_tested_1d(
+						{ shape.begin()[shape.size() - 1] }, dtype, idx), output_baseline_single( { 1 }, dtype, idx), output_tested_single( { 1 }, dtype, idx)
 		{
 			initForTest(input, 0.0, 1.0);
 		}
@@ -825,8 +953,8 @@ namespace avocado
 			cpuReduceTensor(cpuGetDefaultContext(), op, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested_single.getDescriptor(),
 					output_tested_single.getMemory());
 #elif USE_CUDA
-			cudaReduceTensor(cudaGetDefaultContext(device_index), op, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested_single.getDescriptor(),
-					output_tested_single.getMemory());
+			cudaReduceTensor(cudaGetDefaultContext(device_index), op, alpha, input.getDescriptor(), input.getMemory(), beta,
+					output_tested_single.getDescriptor(), output_tested_single.getMemory());
 #elif USE_OPENCL
 			openclReduceTensor(openclGetDefaultContext(device_index), op, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested_single.getDescriptor(),
 					output_tested_single.getMemory());
@@ -835,9 +963,7 @@ namespace avocado
 		}
 
 		BatchNormTester::BatchNormTester(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype) :
-				device_index(idx),
-				shape(shape),
-				dtype(dtype)
+				device_index(idx), shape(shape), dtype(dtype)
 		{
 		}
 		double BatchNormTester::getDifferenceInference(const void *alpha, const void *beta) noexcept
@@ -870,13 +996,13 @@ namespace avocado
 					output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(),
 					mean.getMemory(), variance.getMemory(), epsilon);
 #elif USE_CUDA
-			cudaBatchNormInference(cpuGetDefaultContext(device_index), activation, alpha, input.getDescriptor(), input.getMemory(), beta,
-								output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(),
-								mean.getMemory(), variance.getMemory(), epsilon);
+//			cudaBatchNormInference(cpuGetDefaultContext(device_index), activation, alpha, input.getDescriptor(), input.getMemory(), beta,
+//					output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean.getMemory(),
+//					variance.getMemory(), epsilon);
 #elif USE_OPENCL
 			openclBatchNormInference(cpuGetDefaultContext(device_index), activation, alpha, input.getDescriptor(), input.getMemory(), beta,
-								output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(),
-								mean.getMemory(), variance.getMemory(), epsilon);
+					output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(),
+					mean.getMemory(), variance.getMemory(), epsilon);
 #endif
 			return diffForTest(output_baseline, output_tested);
 		}
@@ -919,8 +1045,7 @@ namespace avocado
 					output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(),
 					mean_tested.getMemory(), variance_tested.getMemory(), epsilon);
 #endif
-			return diffForTest(mean_baseline, mean_tested) + diffForTest(variance_baseline, variance_tested)
-					+ diffForTest(output_baseline, output_tested);
+			return diffForTest(mean_baseline, mean_tested) + diffForTest(variance_baseline, variance_tested) + diffForTest(output_baseline, output_tested);
 		}
 		double BatchNormTester::getDifferenceBackward(const void *alpha, const void *beta) noexcept
 		{
@@ -959,14 +1084,12 @@ namespace avocado
 			initForTest(scaleUpdate_tested, 0.0, 1.0);
 			initForTest(biasUpdate_tested, 1.0);
 
-			refBatchNormForward(0, activation, alpha, input.getRefDescriptor(), input.getRefMemory(), beta, output.getRefDescriptor(),
-					output.getRefMemory(), scale.getRefDescriptor(), scale.getRefMemory(), bias.getRefMemory(), mean.getRefMemory(),
-					variance.getRefMemory(), epsilon);
-			refBatchNormBackward(0, activation, alpha, input.getRefDescriptor(), input.getRefMemory(), output.getRefDescriptor(),
-					output.getRefMemory(), beta, gradientIn_baseline.getRefDescriptor(), gradientIn_baseline.getRefMemory(),
-					gradientOut_baseline.getRefDescriptor(), gradientOut_baseline.getRefMemory(), scale.getRefDescriptor(), scale.getRefMemory(),
-					mean.getRefMemory(), variance.getRefMemory(), alpha, beta, scaleUpdate_baseline.getRefMemory(),
-					biasUpdate_baseline.getRefMemory(), epsilon);
+			refBatchNormForward(0, activation, alpha, input.getRefDescriptor(), input.getRefMemory(), beta, output.getRefDescriptor(), output.getRefMemory(),
+					scale.getRefDescriptor(), scale.getRefMemory(), bias.getRefMemory(), mean.getRefMemory(), variance.getRefMemory(), epsilon);
+			refBatchNormBackward(0, activation, alpha, input.getRefDescriptor(), input.getRefMemory(), output.getRefDescriptor(), output.getRefMemory(), beta,
+					gradientIn_baseline.getRefDescriptor(), gradientIn_baseline.getRefMemory(), gradientOut_baseline.getRefDescriptor(),
+					gradientOut_baseline.getRefMemory(), scale.getRefDescriptor(), scale.getRefMemory(), mean.getRefMemory(), variance.getRefMemory(), alpha,
+					beta, scaleUpdate_baseline.getRefMemory(), biasUpdate_baseline.getRefMemory(), epsilon);
 
 			initForTest(output, 0.1);
 #if USE_CPU
@@ -993,6 +1116,367 @@ namespace avocado
 #endif
 			return diffForTest(scaleUpdate_baseline, scaleUpdate_tested) + diffForTest(biasUpdate_baseline, biasUpdate_tested)
 					+ diffForTest(gradientOut_tested, gradientOut_baseline) + diffForTest(gradientIn_tested, gradientIn_baseline);
+		}
+
+		LossFunctionTester::LossFunctionTester(avDeviceIndex_t idx, avLossType_t loss_type, std::vector<int> shape, avDataType_t dtype) :
+				device_index(idx), loss_type(loss_type), shape(shape), dtype(dtype)
+		{
+		}
+		double LossFunctionTester::getDifferenceLoss() noexcept
+		{
+			TensorWrapper output(shape, dtype, device_index);
+			TensorWrapper target(shape, dtype, device_index);
+			initForTest(output, 0.0);
+			initForTest(target, 1.0);
+			absForTest(output);
+			absForTest(target);
+
+			uint32_t result_baseline[4] = { 0, 0, 0, 0 };
+			uint32_t result_tested[4] = { 0, 0, 0, 0 };
+
+			refLossFunction(0, loss_type, output.getRefDescriptor(), output.getRefMemory(), target.getRefDescriptor(), target.getRefMemory(), &result_baseline);
+#if USE_CPU
+			cpuLossFunction(cpuGetDefaultContext(), loss_type, output.getDescriptor(), output.getMemory(), target.getDescriptor(), target.getMemory(),
+					&result_tested);
+#elif USE_CUDA
+			cudaLossFunction(cudaGetDefaultContext(device_index), loss_type, output.getDescriptor(), output.getMemory(), target.getDescriptor(),
+					target.getMemory(), &result_tested);
+#elif USE_OPENCL
+			openclLossFunction(openclGetDefaultContext(device_index), loss_type, output.getDescriptor(), output.getMemory(), target.getDescriptor(),
+					target.getMemory(), &result_tested);
+#endif
+
+			switch (dtype)
+			{
+				case AVOCADO_DTYPE_FLOAT32:
+					return std::fabs(reinterpret_cast<float*>(result_baseline)[0] - reinterpret_cast<float*>(result_tested)[0]);
+				case AVOCADO_DTYPE_FLOAT64:
+					return std::fabs(reinterpret_cast<double*>(result_baseline)[0] - reinterpret_cast<double*>(result_tested)[0]);
+				default:
+					return 1.0;
+			}
+		}
+		double LossFunctionTester::getDifferenceGradient(const void *alpha, const void *beta, bool isFused) noexcept
+		{
+			TensorWrapper output(shape, dtype, device_index);
+			TensorWrapper target(shape, dtype, device_index);
+			initForTest(output, 0.0);
+			initForTest(target, 1.0);
+			absForTest(output);
+			absForTest(target);
+
+			TensorWrapper gradient_baseline(shape, dtype, device_index);
+			TensorWrapper gradient_tested(shape, dtype, device_index);
+			initForTest(gradient_baseline, 0.1);
+			initForTest(gradient_tested, 0.1);
+
+			refLossGradient(0, loss_type, alpha, output.getRefDescriptor(), output.getRefMemory(), target.getRefDescriptor(), target.getRefMemory(), beta,
+					gradient_baseline.getRefDescriptor(), gradient_baseline.getRefMemory(), isFused);
+#if USE_CPU
+			cpuLossGradient(cpuGetDefaultContext(), loss_type, alpha, output.getDescriptor(), output.getMemory(), target.getDescriptor(),
+					target.getMemory(), beta, gradient_tested.getDescriptor(), gradient_tested.getMemory(), isFused);
+#elif USE_CUDA
+			cudaLossGradient(cudaGetDefaultContext(device_index), loss_type, alpha, output.getDescriptor(), output.getMemory(), target.getDescriptor(),
+					target.getMemory(), beta, gradient_tested.getDescriptor(), gradient_tested.getMemory(), isFused);
+#elif USE_OPENCL
+			openclLossGradient(openclGetDefaultContext(device_index), loss_type, alpha, output.getDescriptor(), output.getMemory(), target.getDescriptor(), target.getMemory(),
+					beta, gradient_tested.getDescriptor(), gradient_tested.getMemory(), isFused);
+#endif
+			return diffForTest(gradient_baseline, gradient_tested);
+		}
+
+		OptimizerTester::OptimizerTester(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype) :
+				device_index(idx), optimizer(idx), shape(shape), dtype(dtype)
+		{
+		}
+		void OptimizerTester::set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags)
+		{
+			optimizer.set(type, learningRate, coefficients, flags);
+		}
+		double OptimizerTester::getDifference(const void *alpha, const void *beta) noexcept
+		{
+			TensorWrapper gradient(shape, dtype, device_index);
+			initForTest(gradient, 0.0);
+
+			TensorWrapper weights_baseline(shape, dtype, device_index);
+			TensorWrapper weights_tested(shape, dtype, device_index);
+			initForTest(weights_baseline, 0.1);
+			initForTest(weights_tested, 0.1);
+
+			int elements = optimizer.getWorkspaceSize(weights_baseline) / dtypeSize(dtype);
+			TensorWrapper workspace_baseline( { elements }, dtype, device_index);
+			TensorWrapper workspace_tested( { elements }, dtype, device_index);
+
+			initForTest(workspace_baseline, 1.0);
+			initForTest(workspace_tested, 1.0);
+			absForTest(workspace_baseline);
+			absForTest(workspace_tested);
+
+			refOptimizerLearn(0, optimizer.getRefDescriptor(), alpha, gradient.getRefDescriptor(), gradient.getRefMemory(), beta,
+					weights_baseline.getRefDescriptor(), weights_baseline.getRefMemory(), workspace_baseline.getRefMemory());
+#if USE_CPU
+			cpuOptimizerLearn(cpuGetDefaultContext(), optimizer.getDescriptor(), alpha, gradient.getDescriptor(), gradient.getMemory(), beta,
+					weights_tested.getDescriptor(), weights_tested.getMemory(), workspace_tested.getMemory());
+#elif USE_CUDA
+//			cudaOptimizerLearn(cudaGetDefaultContext(device_index), optimizer.getDescriptor(), alpha, gradient.getDescriptor(), gradient.getMemory(), beta,
+//					weights_tested.getDescriptor(), weights_tested.getMemory(), workspace_tested.getMemory());
+#elif USE_OPENCL
+			openclOptimizerLearn(openclGetDefaultContext(device_index), optimizer.getDescriptor(), alpha, gradient.getDescriptor(), gradient.getMemory(), beta,
+					weights_tested.getDescriptor(), weights_tested.getMemory(), workspace_tested.getMemory());
+#endif
+
+			return diffForTest(weights_baseline, weights_tested) + diffForTest(workspace_baseline, workspace_tested);
+		}
+
+		RegularizerTest::RegularizerTest(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype) :
+				device_index(idx), shape(shape), dtype(dtype)
+		{
+		}
+		double RegularizerTest::getDifference(const void *coefficient, const void *offset) noexcept
+		{
+			TensorWrapper gradient_baseline(shape, dtype, device_index);
+			TensorWrapper gradient_tested(shape, dtype, device_index);
+			initForTest(gradient_baseline, 0.1);
+			initForTest(gradient_tested, 0.1);
+
+			TensorWrapper weights(shape, dtype, device_index);
+			initForTest(weights, 1.0);
+
+			uint32_t loss_baseline[4] = { 0, 0, 0, 0 };
+			uint32_t loss_tested[4] = { 0, 0, 0, 0 };
+
+			refRegularizerL2(0, gradient_baseline.getRefDescriptor(), gradient_baseline.getRefMemory(), weights.getRefDescriptor(), weights.getRefMemory(),
+					coefficient, offset, loss_baseline);
+#if USE_CPU
+			cpuRegularizerL2(cpuGetDefaultContext(), gradient_tested.getDescriptor(), gradient_tested.getMemory(), weights.getDescriptor(),
+					weights.getMemory(), coefficient, offset, loss_tested);
+#elif USE_CUDA
+			cudaRegularizerL2(cudaGetDefaultContext(device_index), gradient_baseline.getDescriptor(), gradient_baseline.getMemory(), weights.getDescriptor(),
+					weights.getMemory(), coefficient, offset, loss_tested);
+#elif USE_OPENCL
+			openclRegularizerL2(openclGetDefaultContext(device_index), gradient_baseline.getDescriptor(), gradient_baseline.getMemory(), weights.getDescriptor(),
+					weights.getMemory(), coefficient, offset, loss_tested);
+#endif
+
+			double diff = diffForTest(gradient_baseline, gradient_tested);
+
+			switch (dtype)
+			{
+				case AVOCADO_DTYPE_FLOAT32:
+					diff += std::fabs(reinterpret_cast<float*>(loss_baseline)[0] - reinterpret_cast<float*>(loss_tested)[0]);
+					break;
+				case AVOCADO_DTYPE_FLOAT64:
+					diff += std::fabs(reinterpret_cast<double*>(loss_baseline)[0] - reinterpret_cast<double*>(loss_tested)[0]);
+					break;
+				default:
+					diff += 1.0;
+					break;
+			}
+			return diff;
+		}
+
+		Im2rowTest::Im2rowTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype) :
+				device_index(idx), config(idx, inputShape.size() - 2), input_shape(inputShape), filter_shape(filterShape), dtype(dtype)
+		{
+		}
+		void Im2rowTest::set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding,
+				const std::array<int, 3> &dilation, int groups, const void *paddingValue)
+		{
+			config.set(algo, mode, strides, padding, dilation, groups, paddingValue);
+		}
+		double Im2rowTest::getDifference() noexcept
+		{
+			TensorWrapper input(input_shape, dtype, device_index);
+			TensorWrapper filter(filter_shape, dtype, device_index);
+			initForTest(input, 1.0);
+			std::vector<int> output_shape = config.getOutputShape(input, filter);
+
+			int output_tiles = 1;
+			for (size_t i = 0; i < output_shape.size() - 1; i++)
+				output_tiles *= output_shape[i];
+
+			int filters_tiles = 1;
+			for (size_t i = 1; i < filter_shape.size(); i++)
+				filters_tiles *= filter_shape[i];
+			std::vector<int> matrix_shape { output_tiles, filters_tiles };
+
+			TensorWrapper matrix_baseline(matrix_shape, dtype, device_index);
+			TensorWrapper matrix_tested(matrix_shape, dtype, device_index);
+
+			refIm2Row(0, config.getRefDescriptor(), filter.getRefDescriptor(), input.getRefDescriptor(), input.getRefMemory(),
+					matrix_baseline.getRefDescriptor(), matrix_baseline.getRefMemory());
+#if USE_CPU
+			cpuIm2Row(cpuGetDefaultContext(), config.getDescriptor(), filter.getDescriptor(), input.getDescriptor(), input.getMemory(),
+					matrix_tested.getDescriptor(), matrix_tested.getMemory());
+#elif USE_CUDA
+			cudaIm2Row(cudaGetDefaultContext(device_index), config.getDescriptor(), filter.getDescriptor(), input.getDescriptor(), input.getMemory(),
+					matrix_tested.getDescriptor(), matrix_tested.getMemory());
+#elif USE_OPENCL
+			openclIm2Row(openclGetDefaultContext(device_index), config.getDescriptor(), filter.getDescriptor(), input.getDescriptor(), input.getMemory(),
+					matrix_tested.getDescriptor(), matrix_tested.getMemory());
+#endif
+			return diffForTest(matrix_baseline, matrix_tested);
+		}
+
+		ConvolutionTest::ConvolutionTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype) :
+				device_index(idx), config(idx, inputShape.size() - 2), input_shape(inputShape), filter_shape(filterShape), dtype(dtype)
+		{
+		}
+		void ConvolutionTest::set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding,
+				const std::array<int, 3> &dilation, int groups, const void *paddingValue)
+		{
+			config.set(algo, mode, strides, padding, dilation, groups, paddingValue);
+		}
+		double ConvolutionTest::getDifferenceInference(const void *alpha, const void *beta) noexcept
+		{
+			return 1.0;
+		}
+		double ConvolutionTest::getDifferenceForward(const void *alpha, const void *beta) noexcept
+		{
+			TensorWrapper input(input_shape, dtype, device_index);
+			TensorWrapper weights(filter_shape, dtype, device_index);
+			initForTest(input, 0.0);
+			initForTest(weights, 1.0);
+
+			std::vector<int> output_shape = config.getOutputShape(input, weights);
+			TensorWrapper output_baseline(output_shape, dtype, device_index);
+			TensorWrapper output_tested(output_shape, dtype, device_index);
+			initForTest(output_baseline, 0.1);
+			initForTest(output_tested, 0.1);
+
+			avSize_t workspace_size = 0;
+			refGetConvolutionWorkspaceSize(config.getRefDescriptor(), input.getRefDescriptor(), weights.getRefDescriptor(), true, &workspace_size);
+			TensorWrapper workspace_baseline( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+
+			refConvolutionForward(0, config.getRefDescriptor(), alpha, input.getRefDescriptor(), input.getRefMemory(), weights.getRefDescriptor(),
+					weights.getRefMemory(), beta, output_baseline.getRefDescriptor(), output_baseline.getRefMemory(), workspace_baseline.getRefMemory());
+
+			workspace_size = 0;
+//#if USE_CPU
+//			cpuGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), true, &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			cpuConvolutionForward(cpuGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#elif USE_CUDA
+//			cudaGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			cudaConvolutionForward(cudaGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#elif USE_OPENCL
+//			cudaGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			openclConvolutionForward(openclGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#endif
+			return diffForTest(output_baseline, output_tested);
+		}
+		double ConvolutionTest::getDifferenceBackward(const void *alpha, const void *beta) noexcept
+		{
+			TensorWrapper gradient_prev_baseline(input_shape, dtype, device_index);
+			TensorWrapper gradient_prev_tested(input_shape, dtype, device_index);
+			initForTest(gradient_prev_baseline, 0.1);
+			initForTest(gradient_prev_tested, 0.1);
+
+			TensorWrapper weights(filter_shape, dtype, device_index);
+			initForTest(weights, 1.0);
+
+			std::vector<int> gradient_next_shape = config.getOutputShape(gradient_prev_baseline, weights);
+			TensorWrapper gradient_next(gradient_next_shape, dtype, device_index);
+			initForTest(gradient_next, 0.0);
+
+			avSize_t workspace_size = 0;
+			refGetConvolutionWorkspaceSize(config.getRefDescriptor(), gradient_prev_baseline.getRefDescriptor(), weights.getRefDescriptor(), false,
+					&workspace_size);
+			TensorWrapper workspace_baseline( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+
+			refConvolutionBackward(0, config.getRefDescriptor(), alpha, gradient_prev_baseline.getRefDescriptor(), gradient_prev_baseline.getRefMemory(),
+					weights.getRefDescriptor(), weights.getRefMemory(), beta, gradient_next.getRefDescriptor(), gradient_next.getRefMemory(),
+					workspace_baseline.getRefMemory());
+
+			workspace_size = 0;
+//#if USE_CPU
+//			cpuGetConvolutionWorkspaceSize(config.getDescriptor(), gradient_prev_tested.getDescriptor(), weights.getDescriptor(), false,
+//					&workspace_size);
+//
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			cpuConvolutionBackward(cpuGetDefaultContext(), config.getDescriptor(), alpha, gradient_prev_tested.getDescriptor(),
+//					gradient_prev_tested.getMemory(), weights.getDescriptor(), weights.getMemory(), beta, gradient_next.getDescriptor(),
+//					gradient_next.getMemory(), workspace_tested.getMemory());
+//#elif USE_CUDA
+//			cudaGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			cudaConvolutionForward(cudaGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#elif USE_OPENCL
+//			cudaGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			openclConvolutionForward(openclGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#endif
+			return diffForTest(gradient_prev_baseline, gradient_prev_tested);
+		}
+		double ConvolutionTest::getDifferenceUpdate(const void *alpha, const void *beta) noexcept
+		{
+			TensorWrapper update_baseline(filter_shape, dtype, device_index);
+			TensorWrapper update_tested(filter_shape, dtype, device_index);
+//			initForTest(update_baseline, 0.1);
+//			initForTest(update_tested, 0.1);
+
+			TensorWrapper input(input_shape, dtype, device_index);
+//			initForTest(input, 1.0);
+			input.setall(1.0);
+
+			std::vector<int> gradient_shape = config.getOutputShape(input, update_baseline);
+			TensorWrapper gradient(gradient_shape, dtype, device_index);
+//			initForTest(gradient, 0.0);
+			gradient.setall(1.0);
+
+			avSize_t workspace_size = 0;
+			refGetConvolutionWorkspaceSize(config.getRefDescriptor(), input.getRefDescriptor(), update_baseline.getRefDescriptor(), false, &workspace_size);
+			TensorWrapper workspace_baseline( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+
+			refConvolutionUpdate(0, config.getRefDescriptor(), alpha, input.getRefDescriptor(), input.getRefMemory(), gradient.getRefDescriptor(),
+					gradient.getRefMemory(), beta, update_baseline.getRefDescriptor(), update_baseline.getRefMemory(), workspace_baseline.getRefMemory());
+
+			workspace_size = 0;
+//#if USE_CPU
+//			cpuGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), update_tested.getDescriptor(), false, &workspace_size);
+//			std::cout << "cpu workspace = " << workspace_size << '\n';
+//
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			cpuConvolutionUpdate(cpuGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					gradient.getDescriptor(), gradient.getMemory(), beta, update_tested.getDescriptor(), update_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#elif USE_CUDA
+//			cudaGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			cudaConvolutionForward(cudaGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#elif USE_OPENCL
+//			cudaGetConvolutionWorkspaceSize(config.getDescriptor(), input.getDescriptor(), weights.getDescriptor(), &workspace_size);
+//			TensorWrapper workspace_tested( { static_cast<int>(workspace_size) }, AVOCADO_DTYPE_INT8, device_index);
+//
+//			openclConvolutionForward(openclGetDefaultContext(), config.getDescriptor(), alpha, input.getDescriptor(), input.getMemory(),
+//					weights.getDescriptor(), weights.getMemory(), beta, output_tested.getDescriptor(), output_tested.getMemory(),
+//					workspace_tested.getMemory());
+//#endif
+			printForTest<double>(update_baseline);
+			printForTest<double>(update_tested);
+			return diffForTest(update_baseline, update_tested);
 		}
 
 	} /* namespace backend */

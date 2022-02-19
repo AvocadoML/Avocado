@@ -63,9 +63,9 @@ namespace avocado
 			class MemoryDescriptor
 			{
 #if USE_OPENCL
-					uint8_t *m_data = nullptr;
+					int8_t *m_data = nullptr;
 #else
-					uint8_t *m_data = nullptr;
+					int8_t *m_data = nullptr;
 #endif
 					avDeviceIndex_t m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
 					avSize_t m_size = 0;
@@ -75,6 +75,12 @@ namespace avocado
 					static constexpr av_int64 descriptor_type = 1;
 
 					MemoryDescriptor() = default;
+#if USE_CUDA or USE_OPENCL
+					MemoryDescriptor(avDeviceIndex_t index, avSize_t sizeInBytes);
+#else
+					MemoryDescriptor(avSize_t sizeInBytes);
+#endif
+					MemoryDescriptor(const MemoryDescriptor &other, avSize_t size, avSize_t offset);
 					MemoryDescriptor(const MemoryDescriptor &other) = delete;
 					MemoryDescriptor(MemoryDescriptor &&other);
 					MemoryDescriptor& operator=(const MemoryDescriptor &other) = delete;
@@ -123,12 +129,12 @@ namespace avocado
 					template<typename T = void>
 					T* data() noexcept
 					{
-						return reinterpret_cast<T*>(m_data + m_offset);
+						return reinterpret_cast<T*>(m_data);
 					}
 					template<typename T = void>
 					const T* data() const noexcept
 					{
-						return reinterpret_cast<const T*>(m_data + m_offset);
+						return reinterpret_cast<const T*>(m_data);
 					}
 #endif
 			};
@@ -143,8 +149,8 @@ namespace avocado
 #else
 #endif
 					avDeviceIndex_t m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
-					MemoryDescriptor m_workspace;
-					avSize_t m_workspace_size = 0;
+					mutable MemoryDescriptor m_workspace;
+					mutable avSize_t m_workspace_size = 0;
 				public:
 					static constexpr av_int64 descriptor_type = 2;
 
@@ -174,7 +180,7 @@ namespace avocado
 					 * Calling this method on an already destroyed descriptor has no effect.
 					 */
 					void destroy();
-					MemoryDescriptor& getWorkspace();
+					MemoryDescriptor& getWorkspace() const;
 #if USE_CUDA
 					void setDevice() const;
 					avDeviceIndex_t getDevice() const noexcept;
@@ -201,6 +207,8 @@ namespace avocado
 					void set(avDataType_t dtype, int nbDims, const int dimensions[]);
 					void get(avDataType_t *dtype, int *nbDims, int dimensions[]) const;
 
+					int& operator[](int index);
+					int operator[](int index) const;
 					int dimension(int index) const;
 					int nbDims() const noexcept;
 					avSize_t sizeInBytes() const noexcept;
@@ -213,6 +221,7 @@ namespace avocado
 					avDataType_t dtype() const noexcept;
 
 					bool equalShape(const TensorDescriptor &other) noexcept;
+					std::string toString() const;
 				private:
 					void setup_stride();
 			};
@@ -236,11 +245,23 @@ namespace avocado
 					void destroy();
 					static std::string className();
 
-					void set(avConvolutionMode_t mode, int nbDims, const int strides[], const int padding[], const int dilation[], int groups,
-							const void *paddingValue);
-					void get(avConvolutionMode_t *mode, int *nbDims, int strides[], int padding[], int dilation[], int *groups,
-							void *paddingValue) const;
+					void set(avConvolutionAlgorithm_t algorithm, avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[],
+							const int dilation[], int groups, const void *paddingValue);
+					void get(avConvolutionAlgorithm_t *algorithm, avConvolutionMode_t *mode, int *nbDims, int padding[], int strides[],
+							int dilation[], int *groups, void *paddingValue) const;
+					template<typename T>
+					T getPaddingValue() const noexcept
+					{
+						static_assert(sizeof(T) <= sizeof(padding_value), "");
+						T result;
+						std::memcpy(&result, padding_value.data(), sizeof(T));
+						return result;
+					}
 					bool paddingWithZeros() const noexcept;
+					TensorDescriptor getOutputShape(const TensorDescriptor &xDesc, const TensorDescriptor &wDesc) const;
+					bool isStrided() const noexcept;
+					bool isDilated() const noexcept;
+					std::string toString() const;
 			};
 
 			class PoolingDescriptor
@@ -274,12 +295,9 @@ namespace avocado
 					void destroy();
 					static std::string className();
 
-					void set_sgd(double learningRate, bool useMomentum, bool useNesterov, double beta1);
-					void set_adam(double learningRate, double beta1, double beta2);
-					void get_type(avOptimizerType_t *type) const;
-					void get_sgd(double *learningRate, bool *useMomentum, bool *useNesterov, double *beta1) const;
-					void get_adam(double *learningRate, double *beta1, double *beta2) const;
-					void get_workspace_size(int *result, const TensorDescriptor &wDesc) const;
+					void set(avOptimizerType_t optimizerType, double learningRate, const double coefficients[], const bool flags[]);
+					void get(avOptimizerType_t *optimizerType, double *learningRate, double coefficients[], bool flags[]);
+					void get_workspace_size(av_int64 *result, const TensorDescriptor &wDesc) const;
 			};
 
 			class DropoutDescriptor
@@ -299,6 +317,7 @@ namespace avocado
 			template<typename T>
 			class DescriptorPool
 			{
+					T m_default_descriptor;
 					std::vector<std::unique_ptr<T>> m_pool;
 					std::vector<int> m_available_descriptors;
 					std::mutex m_pool_mutex;
@@ -323,7 +342,7 @@ namespace avocado
 					}
 					~DescriptorPool()
 					{
-						std::lock_guard lock(m_pool_mutex);
+						std::lock_guard<std::mutex> lock(m_pool_mutex);
 						try
 						{
 							for (size_t i = 0; i < m_pool.size(); i++)
@@ -374,23 +393,25 @@ namespace avocado
 					{
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
-						if (not isValid(desc))
+						if (isValid(desc))
+							return *(m_pool.at(get_descriptor_index(desc)));
+						else
 							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
-						return *(m_pool.at(get_descriptor_index(desc)));
 					}
-					const T& get(int64_t desc) const
+					const T& const_get(av_int64 desc) const
 					{
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
-						if (not isValid(desc))
-							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
-						return *(m_pool.at(get_descriptor_index(desc)));
+						if (isValid(desc))
+							return *(m_pool.at(get_descriptor_index(desc)));
+						else
+							return m_default_descriptor;
 					}
 
 					template<typename ... Args>
 					av_int64 create(Args &&... args)
 					{
-						std::lock_guard lock(m_pool_mutex);
+						std::lock_guard<std::mutex> lock(m_pool_mutex);
 						int result;
 						if (m_available_descriptors.size() > 0)
 						{
@@ -410,7 +431,7 @@ namespace avocado
 					}
 					void destroy(av_int64 desc)
 					{
-						std::lock_guard lock(m_pool_mutex);
+						std::lock_guard<std::mutex> lock(m_pool_mutex);
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << " = " << desc << std::endl;
 						if (not isValid(desc))
 							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
@@ -465,12 +486,36 @@ namespace avocado
 			OptimizerDescriptor& getOptimizer(avOptimizerDescriptor_t desc);
 			DropoutDescriptor& getDropout(avDropoutDescriptor_t desc);
 
+			const MemoryDescriptor& const_getMemory(avMemoryDescriptor_t desc);
+			const ContextDescriptor& const_getContext(avContextDescriptor_t desc);
+			const TensorDescriptor& const_getTensor(avTensorDescriptor_t desc);
+			const ConvolutionDescriptor& const_getConvolution(avConvolutionDescriptor_t desc);
+			const PoolingDescriptor& const_getPooling(avPoolingDescriptor_t desc);
+			const OptimizerDescriptor& const_getOptimizer(avOptimizerDescriptor_t desc);
+			const DropoutDescriptor& const_getDropout(avDropoutDescriptor_t desc);
+
 			template<typename T = void>
 			T* getPointer(avMemoryDescriptor_t desc)
 			{
 				try
 				{
 					return getMemory(desc).data<T>();
+				} catch (std::exception &e)
+				{
+//					std::cout << "----------------------------------------------\n";
+//					std::cout << "desc = " << desc << '\n';
+//					std::cout << __FILE__ << ":" << __LINE__ << " " << e.what() << '\n';
+//					std::cout << "----------------------------------------------\n";
+					return nullptr;
+				}
+			}
+
+			template<typename T = void>
+			const T* const_getPointer(const avMemoryDescriptor_t desc)
+			{
+				try
+				{
+					return const_getMemory(desc).data<T>();
 				} catch (std::exception &e)
 				{
 //					std::cout << "----------------------------------------------\n";
@@ -543,6 +588,7 @@ namespace avocado
 
 			bool is_logical(avBinaryOp_t op) noexcept;
 			bool is_logical(avUnaryOp_t op) noexcept;
+			bool is_logical(avReduceOp_t op) noexcept;
 
 			template<typename T, typename U>
 			bool same_device_type(T lhs, U rhs)
@@ -557,9 +603,6 @@ namespace avocado
 				else
 					return false;
 			}
-
-			TensorDescriptor getConvolutionOutputShape(const ConvolutionDescriptor &config, const TensorDescriptor &inputDesc,
-					const TensorDescriptor &filterDesc);
 
 		} /* namespace cpu/cuda/opencl/reference */
 	} /* namespace backend */

@@ -12,7 +12,6 @@
 #include "wrappers.hpp"
 
 #include <string>
-#include <gtest/gtest.h>
 
 namespace avocado
 {
@@ -106,6 +105,40 @@ namespace avocado
 				TransposeTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
 				double getDifference(const std::vector<int> &ordering) noexcept;
 		};
+		class ScaleTester
+		{
+			private:
+				avDeviceIndex_t device_index;
+				std::vector<int> shape;
+				avDataType_t dtype;
+			public:
+				ScaleTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+				double getDifference(const void *alpha) noexcept;
+		};
+		class AddScalarTester
+		{
+			private:
+				avDeviceIndex_t device_index;
+				std::vector<int> shape;
+				avDataType_t dtype;
+			public:
+				AddScalarTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+				double getDifference(const void *scalar) noexcept;
+		};
+		class AddBiasTester
+		{
+			private:
+				avDeviceIndex_t device_index;
+				std::vector<int> shape;
+				avDataType_t input_dtype;
+				avDataType_t output_dtype;
+				avDataType_t bias_dtype;
+			public:
+				AddBiasTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+				AddBiasTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t input_dtype, avDataType_t output_dtype,
+						avDataType_t bias_dtype);
+				double getDifference(const void *alpha3, const void *alpha1, const void *alpha2, const void *beta1, const void *beta2) noexcept;
+		};
 
 		class UnaryOpTester
 		{
@@ -165,6 +198,75 @@ namespace avocado
 				double getDifferenceInference(const void *alpha, const void *beta) noexcept;
 				double getDifferenceForward(const void *alpha, const void *beta) noexcept;
 				double getDifferenceBackward(const void *alpha, const void *beta) noexcept;
+		};
+
+		class LossFunctionTester
+		{
+			private:
+				avDeviceIndex_t device_index;
+				avLossType_t loss_type;
+				std::vector<int> shape;
+				avDataType_t dtype;
+			public:
+				LossFunctionTester(avDeviceIndex_t idx, avLossType_t loss_type, std::vector<int> shape, avDataType_t dtype);
+				double getDifferenceLoss() noexcept;
+				double getDifferenceGradient(const void *alpha, const void *beta, bool isFused) noexcept;
+		};
+
+		class OptimizerTester
+		{
+			private:
+				avDeviceIndex_t device_index;
+				OptimizerWrapper optimizer;
+				std::vector<int> shape;
+				avDataType_t dtype;
+			public:
+				OptimizerTester(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype);
+				void set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
+				double getDifference(const void *alpha, const void *beta) noexcept;
+		};
+
+		class RegularizerTest
+		{
+			private:
+				avDeviceIndex_t device_index;
+				std::vector<int> shape;
+				avDataType_t dtype;
+			public:
+				RegularizerTest(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype);
+				double getDifference(const void *coefficient, const void *offset) noexcept;
+		};
+
+		class Im2rowTest
+		{
+			private:
+				avDeviceIndex_t device_index;
+				ConvolutionWrapper config;
+				std::vector<int> input_shape;
+				std::vector<int> filter_shape;
+				avDataType_t dtype;
+			public:
+				Im2rowTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype);
+				void set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &strides,
+						const std::array<int, 3> &padding, const std::array<int, 3> &dilation, int groups, const void *paddingValue);
+				double getDifference() noexcept;
+		};
+		class ConvolutionTest
+		{
+			private:
+				avDeviceIndex_t device_index;
+				ConvolutionWrapper config;
+				std::vector<int> input_shape;
+				std::vector<int> filter_shape;
+				avDataType_t dtype;
+			public:
+				ConvolutionTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype);
+				void set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &strides,
+						const std::array<int, 3> &padding, const std::array<int, 3> &dilation, int groups, const void *paddingValue);
+				double getDifferenceInference(const void *alpha, const void *beta) noexcept;
+				double getDifferenceForward(const void *alpha, const void *beta) noexcept;
+				double getDifferenceBackward(const void *alpha, const void *beta) noexcept;
+				double getDifferenceUpdate(const void *alpha, const void *beta) noexcept;
 		};
 
 	} /* namespace backend */
