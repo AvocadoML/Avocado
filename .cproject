@@ -33,8 +33,8 @@
 								<option id="gnu.cpp.compiler.option.dialect.std.1016231574" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.dialect.flags.728464927" name="Other dialect flags" superClass="gnu.cpp.compiler.option.dialect.flags" useByScannerDiscovery="true" value="-std=c++17" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.917096820" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="USE_CPU=0"/>
-									<listOptionValue builtIn="false" value="USE_CUDA=1"/>
+									<listOptionValue builtIn="false" value="USE_CPU=1"/>
+									<listOptionValue builtIn="false" value="USE_CUDA=0"/>
 									<listOptionValue builtIn="false" value="USE_OPENCL=0"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.475767279" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fopenmp" valueType="string"/>
@@ -51,7 +51,6 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.cpp.link.option.paths.472116631" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.userobjs.989406345" name="Other objects" superClass="gnu.cpp.link.option.userobjs" useByScannerDiscovery="false" valueType="userObjs">
-									<listOptionValue builtIn="false" value="/usr/local/lib/libAvocadoReferenceBackend_static.a"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libAvocadoCpuBackend_static.a"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libAvocadoOpenCLBackend_static.a"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libAvocadoCudaBackend.so"/>

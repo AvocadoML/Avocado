@@ -48,6 +48,7 @@ namespace avocado
 		namespace reference
 		{
 #endif
+			int get_number_of_devices();
 			avDeviceType_t get_device_type(av_int64 descriptor) noexcept;
 			int get_descriptor_type(av_int64 descriptor) noexcept;
 			avDeviceIndex_t get_device_index(av_int64 descriptor) noexcept;
@@ -231,7 +232,6 @@ namespace avocado
 				public:
 					static constexpr av_int64 descriptor_type = 4;
 
-					avConvolutionAlgorithm_t algorithm = AVOCADO_CONVOLUTION_ALGORITHM_AUTO;
 					avConvolutionMode_t mode = AVOCADO_CONVOLUTION_MODE;
 					int dimensions = 2;
 					std::array<int, 3> padding;
@@ -245,10 +245,10 @@ namespace avocado
 					void destroy();
 					static std::string className();
 
-					void set(avConvolutionAlgorithm_t algorithm, avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[],
-							const int dilation[], int groups, const void *paddingValue);
-					void get(avConvolutionAlgorithm_t *algorithm, avConvolutionMode_t *mode, int *nbDims, int padding[], int strides[],
-							int dilation[], int *groups, void *paddingValue) const;
+					void set(avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[], const int dilation[], int groups,
+							const void *paddingValue);
+					void get(avConvolutionMode_t *mode, int *nbDims, int padding[], int strides[], int dilation[], int *groups,
+							void *paddingValue) const;
 					template<typename T>
 					T getPaddingValue() const noexcept
 					{
@@ -322,10 +322,12 @@ namespace avocado
 					std::vector<int> m_available_descriptors;
 					std::mutex m_pool_mutex;
 				public:
-					DescriptorPool(size_t initialSize = 10)
+					DescriptorPool(size_t initialSize = 10, int numRestricted = 0)
 					{
-						m_pool.reserve(initialSize);
+						m_pool.reserve(initialSize + numRestricted);
 						m_available_descriptors.reserve(initialSize);
+						for (int i = 0; i < numRestricted; i++)
+							m_pool.push_back(nullptr);
 					}
 					DescriptorPool(const DescriptorPool<T> &other) = delete;
 					DescriptorPool(DescriptorPool<T> &&other) :
@@ -472,11 +474,12 @@ namespace avocado
 					getPool<T>().destroy(desc);
 				} catch (std::exception &e)
 				{
-//					std::cout << e.what() << '\n';
 					return AVOCADO_STATUS_FREE_FAILED;
 				}
 				return AVOCADO_STATUS_SUCCESS;
 			}
+
+			bool isDefault(avContextDescriptor_t desc);
 
 			MemoryDescriptor& getMemory(avMemoryDescriptor_t desc);
 			ContextDescriptor& getContext(avContextDescriptor_t desc);
@@ -502,10 +505,6 @@ namespace avocado
 					return getMemory(desc).data<T>();
 				} catch (std::exception &e)
 				{
-//					std::cout << "----------------------------------------------\n";
-//					std::cout << "desc = " << desc << '\n';
-//					std::cout << __FILE__ << ":" << __LINE__ << " " << e.what() << '\n';
-//					std::cout << "----------------------------------------------\n";
 					return nullptr;
 				}
 			}
@@ -518,15 +517,9 @@ namespace avocado
 					return const_getMemory(desc).data<T>();
 				} catch (std::exception &e)
 				{
-//					std::cout << "----------------------------------------------\n";
-//					std::cout << "desc = " << desc << '\n';
-//					std::cout << __FILE__ << ":" << __LINE__ << " " << e.what() << '\n';
-//					std::cout << "----------------------------------------------\n";
 					return nullptr;
 				}
 			}
-
-			bool is_transpose(avGemmOperation_t op) noexcept;
 
 			template<typename T>
 			void setScalarValue(void *scalar, T x) noexcept
@@ -586,6 +579,7 @@ namespace avocado
 			int volume(const BroadcastedDimensions &dims) noexcept;
 			BroadcastedDimensions getBroadcastDimensions(const TensorDescriptor &lhs, const TensorDescriptor &rhs) noexcept;
 
+			bool is_transpose(avGemmOperation_t op) noexcept;
 			bool is_logical(avBinaryOp_t op) noexcept;
 			bool is_logical(avUnaryOp_t op) noexcept;
 			bool is_logical(avReduceOp_t op) noexcept;

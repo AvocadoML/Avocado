@@ -49,6 +49,7 @@ namespace
 				return "COMPLEX64";
 		}
 	}
+
 }
 
 namespace avocado
@@ -68,6 +69,26 @@ namespace avocado
 				namespace reference
 				{
 #endif
+
+			int get_number_of_devices()
+			{
+#if USE_CUDA
+				static const int result = []()
+				{
+					int tmp = 0;
+					cudaError_t status = cudaGetDeviceCount(&tmp);
+					if (status != cudaSuccess)
+					return 0;
+					else
+					return tmp;
+				}();
+#elif USE_OPENCL
+
+#else
+				static const int result = 1;
+#endif
+				return result;
+			}
 
 			avDeviceType_t get_device_type(av_int64 descriptor) noexcept
 			{
@@ -245,9 +266,9 @@ namespace avocado
 			void MemoryDescriptor::create(avSize_t sizeInBytes)
 			{
 				if (sizeInBytes > 0)
-					m_data = new int8_t[sizeInBytes];
+				m_data = new int8_t[sizeInBytes];
 				else
-					m_data = nullptr;
+				m_data = nullptr;
 				m_device_index = 0;
 				m_offset = 0;
 				m_size = sizeInBytes;
@@ -516,7 +537,11 @@ namespace avocado
 				assert(nbDims() == static_cast<int>(indices.size()));
 				int result = 0;
 				for (int i = 0; i < m_number_of_dimensions; i++)
-					result += indices.begin()[i] * m_strides[i];
+				{
+					const int idx = indices.begin()[i];
+					assert(idx >= 0 && idx < m_dimensions[i]);
+					result += idx * m_strides[i];
+				}
 				return result;
 			}
 			int TensorDescriptor::firstDim() const noexcept
@@ -619,7 +644,6 @@ namespace avocado
 			 */
 			void ConvolutionDescriptor::create()
 			{
-				algorithm = AVOCADO_CONVOLUTION_ALGORITHM_AUTO;
 				padding.fill(0);
 				stride.fill(1);
 				dilation.fill(1);
@@ -633,14 +657,13 @@ namespace avocado
 			{
 				return "ConvolutionDescriptor";
 			}
-			void ConvolutionDescriptor::set(avConvolutionAlgorithm_t algorithm, avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[],
-					const int dilation[], int groups, const void *paddingValue)
+			void ConvolutionDescriptor::set(avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[], const int dilation[], int groups,
+					const void *paddingValue)
 			{
 				if (nbDims < 0 or nbDims > 3)
 					throw std::invalid_argument("");
-				this->algorithm = algorithm;
 				this->mode = mode;
-				dimensions = nbDims;
+				this->dimensions = nbDims;
 				if (strides != nullptr)
 					std::memcpy(this->stride.data(), strides, sizeof(int) * dimensions);
 				if (padding != nullptr)
@@ -652,15 +675,13 @@ namespace avocado
 				if (paddingValue != nullptr)
 					std::memcpy(this->padding_value.data(), paddingValue, sizeof(int8_t) * padding_value.size());
 			}
-			void ConvolutionDescriptor::get(avConvolutionAlgorithm_t *algorithm, avConvolutionMode_t *mode, int *nbDims, int padding[], int strides[],
-					int dilation[], int *groups, void *paddingValue) const
+			void ConvolutionDescriptor::get(avConvolutionMode_t *mode, int *nbDims, int padding[], int strides[], int dilation[], int *groups,
+					void *paddingValue) const
 			{
-				if (algorithm != nullptr)
-					algorithm[0] = this->algorithm;
 				if (mode != nullptr)
 					mode[0] = this->mode;
 				if (nbDims != nullptr)
-					nbDims[0] = dimensions;
+					nbDims[0] = this->dimensions;
 				if (strides != nullptr)
 					std::memcpy(strides, this->stride.data(), sizeof(int) * dimensions);
 				if (padding != nullptr)
@@ -830,56 +851,48 @@ namespace avocado
 			/*
 			 * GetPool
 			 */
+			template<>
+			DescriptorPool<ContextDescriptor>& getPool()
+			{
+				static DescriptorPool<ContextDescriptor> result(10, get_number_of_devices());
+				return result;
+			}
+
+			bool isDefault(avContextDescriptor_t desc)
+			{
+				const int idx = get_descriptor_index(desc);
+				return 0 <= idx and idx < get_number_of_devices();
+			}
 #if USE_CUDA
-			template<>
-			DescriptorPool<ContextDescriptor>& getPool()
+			thread_local DescriptorPool<ContextDescriptor> default_context_pool = []()
 			{
-				thread_local DescriptorPool<ContextDescriptor> result = []()
+				try
 				{
-					int nb_devices = 0;
-					cudaError_t status = cudaGetDeviceCount(&nb_devices);
-					if (status != cudaSuccess)
-					nb_devices = 0;
-					try
-					{
-						DescriptorPool<ContextDescriptor> tmp;
-						for (int i = 0; i < nb_devices; i++)
-						tmp.create(i, true); // reserve descriptors for default contexts
-						return tmp;
-					}
-					catch (std::exception &e)
-					{
-						return DescriptorPool<ContextDescriptor>();
-					}
-				}();
-				return result;
-			}
+					DescriptorPool<ContextDescriptor> tmp;
+					for(int i = 0; i < get_number_of_devices(); i++)
+					tmp.create(i, true);
+					return tmp;
+				}
+				catch (std::exception &e)
+				{
+					return DescriptorPool<ContextDescriptor>();
+				}
+			}();
 #elif USE_OPENCL
-			template<>
-			DescriptorPool<ContextDescriptor>& getPool()
-			{
-				thread_local DescriptorPool<ContextDescriptor> result;
-				return result;
-			}
 #else
-			template<>
-			DescriptorPool<ContextDescriptor>& getPool()
+			thread_local DescriptorPool<ContextDescriptor> default_context_pool = []()
 			{
-				static DescriptorPool<ContextDescriptor> result = []()
+				try
 				{
-					try
-					{
-						DescriptorPool<ContextDescriptor> tmp;
-						tmp.create(); // reserve descriptor 0 for default context
-						return tmp;
-					}
-					catch (std::exception &e)
-					{
-						return DescriptorPool<ContextDescriptor>();
-					}
-				}();
-				return result;
-			}
+					DescriptorPool<ContextDescriptor> tmp;
+					tmp.create();
+					return tmp;
+				}
+				catch (std::exception &e)
+				{
+					return DescriptorPool<ContextDescriptor>();
+				}
+			}();
 #endif
 
 			MemoryDescriptor& getMemory(avMemoryDescriptor_t desc)
@@ -888,7 +901,10 @@ namespace avocado
 			}
 			ContextDescriptor& getContext(avContextDescriptor_t desc)
 			{
-				return getPool<ContextDescriptor>().get(desc);
+				if (isDefault(desc))
+					return default_context_pool.get(desc);
+				else
+					return getPool<ContextDescriptor>().get(desc);
 			}
 			TensorDescriptor& getTensor(avTensorDescriptor_t desc)
 			{
@@ -917,7 +933,10 @@ namespace avocado
 			}
 			const ContextDescriptor& const_getContext(avContextDescriptor_t desc)
 			{
-				return getPool<ContextDescriptor>().const_get(desc);
+				if (isDefault(desc))
+					return default_context_pool.const_get(desc);
+				else
+					return getPool<ContextDescriptor>().const_get(desc);
 			}
 			const TensorDescriptor& const_getTensor(avTensorDescriptor_t desc)
 			{

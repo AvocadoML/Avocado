@@ -35,33 +35,50 @@ namespace avocado
 {
 	namespace backend
 	{
-		ContextWrapper::ContextWrapper(avDeviceIndex_t device)
+		ContextWrapper::ContextWrapper(avDeviceIndex_t device, bool isDefault, bool isSynchronized) :
+				m_device_index(device), m_is_default(isDefault), m_is_synchronized(isDefault or isSynchronized)
 		{
+			if (m_is_default)
+			{
 #if USE_CPU
-			cpuCreateContextDescriptor(&m_desc);
+				m_desc = cpuGetDefaultContext();
 #elif USE_CUDA
-			cudaCreateContextDescriptor(&m_desc, device);
+				m_desc = cudaGetDefaultContext(m_device_index);
 #elif USE_OPENCL
-			openclCreateContextDescriptor(&m_desc, device);
+				m_desc = openclGetDefaultContext(m_device_index);
 #endif
+			}
+			else
+			{
+#if USE_CPU
+				cpuCreateContextDescriptor(&m_desc);
+#elif USE_CUDA
+				cudaCreateContextDescriptor(&m_desc, device);
+#elif USE_OPENCL
+				openclCreateContextDescriptor(&m_desc, device);
+#endif
+			}
 			refCreateContextDescriptor(&m_ref_desc);
 		}
 		ContextWrapper::ContextWrapper(ContextWrapper &&other) noexcept :
-		m_desc(other.m_desc),
-		m_ref_desc(other.m_ref_desc)
+		m_desc(other.m_desc), m_ref_desc(other.m_ref_desc), m_device_index(other.m_device_index), m_is_default(other.m_is_default), m_is_synchronized(other.m_is_synchronized)
 		{
 			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
 			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
 		}
 		ContextWrapper& ContextWrapper::operator=(ContextWrapper &&other) noexcept
 		{
 			std::swap(this->m_desc, other.m_desc);
 			std::swap(this->m_ref_desc, other.m_ref_desc);
+			std::swap(this->m_device_index, other.m_device_index);
+			std::swap(this->m_is_default, other.m_is_default);
+			std::swap(this->m_is_synchronized, other.m_is_synchronized);
 			return *this;
 		}
 		ContextWrapper::~ContextWrapper()
 		{
-			if (m_desc != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_desc != AVOCADO_INVALID_DESCRIPTOR and not m_is_default)
 			{
 #if USE_CPU
 				cpuDestroyContextDescriptor(m_desc);
@@ -74,22 +91,32 @@ namespace avocado
 			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
 				refDestroyContextDescriptor(m_ref_desc);
 		}
+		void ContextWrapper::synchronize() const
+		{
+#if USE_CPU
+			cpuSynchronizeWithContext(m_desc);
+#elif USE_CUDA
+			cudaSynchronizeWithContext(m_desc);
+#elif USE_OPENCL
+			openclSynchronizeWithContext(m_desc);
+#endif
+		}
 
 		TensorWrapper::TensorWrapper(std::vector<int> shape, avDataType_t dtype, avDeviceIndex_t device) :
 				m_device_index(device)
 		{
 #if USE_CPU
-			auto size_in_bytes = shape_volume(shape) * cpu::dataTypeSize(dtype);
+			size_t size_in_bytes = shape_volume(shape) * cpu::dataTypeSize(dtype);
 			cpuCreateTensorDescriptor(&m_tensor_descriptor);
 			cpuSetTensorDescriptor(m_tensor_descriptor, dtype, shape.size(), shape.data());
 			cpuCreateMemoryDescriptor(&m_memory_descriptor, size_in_bytes);
 #elif USE_CUDA
-			auto size_in_bytes = shape_volume(shape) * cuda::dataTypeSize(dtype);
+			size_t size_in_bytes = shape_volume(shape) * cuda::dataTypeSize(dtype);
 			cudaCreateTensorDescriptor(&m_tensor_descriptor);
 			cudaSetTensorDescriptor(m_tensor_descriptor, dtype, shape.size(), shape.data());
 			cudaCreateMemoryDescriptor(&m_memory_descriptor, device, size_in_bytes);
 #elif USE_OPENCL
-			auto size_in_bytes = shape_volume(shape) * opencl::dataTypeSize(dtype);
+			size_t size_in_bytes = shape_volume(shape) * opencl::dataTypeSize(dtype);
 			openclCreateTensorDescriptor(&m_tensor_descriptor);
 			openclSetTensorDescriptor(m_tensor_descriptor, dtype, shape.size(), shape.data());
 			openclCreateMemoryDescriptor(&m_memory_descriptor, device, size_in_bytes);
@@ -277,10 +304,14 @@ namespace avocado
 		void TensorWrapper::copy_data_to_cpu(void *dst, size_t src_offset, size_t count) const
 		{
 			synchronize();
+			if (refGetMemoryPointer(m_ref_memory_descriptor) == nullptr)
+				return;
 			std::memcpy(dst, reinterpret_cast<const int8_t*>(refGetMemoryPointer(m_ref_memory_descriptor)) + src_offset, count);
 		}
 		void TensorWrapper::copy_data_from_cpu(size_t dst_offset, const void *src, size_t count)
 		{
+			if (refGetMemoryPointer(m_ref_memory_descriptor) == nullptr)
+				return;
 			std::memcpy(reinterpret_cast<int8_t*>(refGetMemoryPointer(m_ref_memory_descriptor)) + dst_offset, src, count);
 #if USE_CPU
 			std::memcpy(reinterpret_cast<int8_t*>(cpuGetMemoryPointer(m_memory_descriptor)) + dst_offset, src, count);
@@ -292,6 +323,8 @@ namespace avocado
 		}
 		void TensorWrapper::set_pattern(const void *pattern, size_t patternSize)
 		{
+			if (refGetMemoryPointer(m_ref_memory_descriptor) == nullptr)
+				return;
 			refSetMemory(0, m_ref_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
 #if USE_CPU
 			cpuSetMemory(cpuGetDefaultContext(), m_memory_descriptor, 0, sizeInBytes(), pattern, patternSize);
@@ -346,7 +379,7 @@ namespace avocado
 #if USE_CPU
 			cpuSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
 #elif USE_CUDA
-//			cudaSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+			cudaSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
 #elif USE_OPENCL
 			openclSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
 #endif
@@ -401,17 +434,17 @@ namespace avocado
 			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
 				refDestroyConvolutionDescriptor(m_ref_desc);
 		}
-		void ConvolutionWrapper::set(avConvolutionAlgorithm_t algo, avConvolutionMode_t mode, const std::array<int, 3> &padding,
-				const std::array<int, 3> &strides, const std::array<int, 3> &dilation, int groups, const void *paddingValue)
+		void ConvolutionWrapper::set(avConvolutionMode_t mode, const std::array<int, 3> &padding, const std::array<int, 3> &strides,
+				const std::array<int, 3> &dilation, int groups, const void *paddingValue)
 		{
 #if USE_CPU
-			cpuSetConvolutionDescriptor(m_desc, algo, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+			cpuSetConvolutionDescriptor(m_desc, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
 #elif USE_CUDA
 			cudaSetConvolutionDescriptor(m_desc, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
 #elif USE_OPENCL
-			openclSetConvolutionDescriptor(m_desc, algo, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+			openclSetConvolutionDescriptor(m_desc, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
 #endif
-			refSetConvolutionDescriptor(m_ref_desc, algo, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
+			refSetConvolutionDescriptor(m_ref_desc, mode, nbDims, padding.data(), strides.data(), dilation.data(), groups, paddingValue);
 		}
 		std::vector<int> ConvolutionWrapper::getOutputShape(const TensorWrapper &input, const TensorWrapper &weights)
 		{
