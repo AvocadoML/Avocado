@@ -144,20 +144,18 @@ namespace avocado
 		class UnaryOpTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			avUnaryOp_t op;
 			TensorWrapper input;
 			TensorWrapper output_baseline;
 			TensorWrapper output_tested;
 		public:
-			UnaryOpTester(avDeviceIndex_t idx, avUnaryOp_t operation, std::initializer_list<int> shape, avDataType_t dtype);
+			UnaryOpTester(avUnaryOp_t operation, std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference(const void *alpha, const void *beta) noexcept;
 		};
 
 		class BinaryOpTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			avBinaryOp_t op;
 			TensorWrapper input;
 			TensorWrapper input_same;
@@ -166,7 +164,7 @@ namespace avocado
 			TensorWrapper output_baseline;
 			TensorWrapper output_tested;
 		public:
-			BinaryOpTester(avDeviceIndex_t idx, avBinaryOp_t operation, std::initializer_list<int> shape, avDataType_t dtype);
+			BinaryOpTester(avBinaryOp_t operation, std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifferenceSame(const void *alpha1, const void *alpha2, const void *beta) noexcept;
 			double getDifference1D(const void *alpha1, const void *alpha2, const void *beta) noexcept;
 			double getDifferenceSingle(const void *alpha1, const void *alpha2, const void *beta) noexcept;
@@ -175,7 +173,6 @@ namespace avocado
 		class ReductionTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			avReduceOp_t op;
 			TensorWrapper input;
 			TensorWrapper output_baseline_1d;
@@ -183,7 +180,7 @@ namespace avocado
 			TensorWrapper output_baseline_single;
 			TensorWrapper output_tested_single;
 		public:
-			ReductionTester(avDeviceIndex_t idx, avReduceOp_t operation, std::initializer_list<int> shape, avDataType_t dtype);
+			ReductionTester(avReduceOp_t operation, std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference1D(const void *alpha, const void *beta) noexcept;
 			double getDifferenceSingle(const void *alpha, const void *beta) noexcept;
 		};
@@ -191,11 +188,10 @@ namespace avocado
 		class BatchNormTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			BatchNormTester(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype);
+			BatchNormTester(std::vector<int> shape, avDataType_t dtype);
 			double getDifferenceInference(const void *alpha, const void *beta) noexcept;
 			double getDifferenceForward(const void *alpha, const void *beta) noexcept;
 			double getDifferenceBackward(const void *alpha, const void *beta) noexcept;
