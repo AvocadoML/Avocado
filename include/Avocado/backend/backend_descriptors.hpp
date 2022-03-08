@@ -327,7 +327,7 @@ namespace avocado
 						m_pool.reserve(initialSize + numRestricted);
 						m_available_descriptors.reserve(initialSize);
 						for (int i = 0; i < numRestricted; i++)
-							m_pool.push_back(nullptr);
+							m_pool.push_back(nullptr); // reserve few descriptors values for default objects
 					}
 					DescriptorPool(const DescriptorPool<T> &other) = delete;
 					DescriptorPool(DescriptorPool<T> &&other) :
@@ -342,18 +342,7 @@ namespace avocado
 						std::swap(this->m_available_descriptors, other.m_available_descriptors);
 						return *this;
 					}
-					~DescriptorPool()
-					{
-						std::lock_guard<std::mutex> lock(m_pool_mutex);
-						try
-						{
-							for (size_t i = 0; i < m_pool.size(); i++)
-								m_pool[i]->destroy();
-						} catch (std::exception &e)
-						{
-							exit(-1);
-						}
-					}
+					~DescriptorPool() = default;
 
 					/**
 					 * \brief Checks if the passed descriptor is valid.

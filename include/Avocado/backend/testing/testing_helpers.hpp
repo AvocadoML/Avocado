@@ -23,7 +23,7 @@ namespace avocado
 		bool supportsType(avDataType_t dtype);
 		bool isDeviceAvailable(const std::string &str);
 
-		void initForTest(TensorWrapper &t, double offset, double shift = 0.0);
+		void initForTest(TensorWrapper &t, double offset, double minValue = -1.0, double maxValue = 1.0);
 		double diffForTest(const TensorWrapper &lhs, const TensorWrapper &rhs);
 		double normForTest(const TensorWrapper &tensor);
 		void absForTest(TensorWrapper &tensor);
@@ -65,80 +65,73 @@ namespace avocado
 		class GemmTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			avGemmOperation_t op_A, op_B;
 			TensorWrapper A;
 			TensorWrapper B;
 			TensorWrapper C_baseline;
 			TensorWrapper C_tested;
 		public:
-			GemmTester(avDeviceIndex_t idx, int M, int N, int K, avGemmOperation_t opA, avGemmOperation_t opB, avDataType_t C_type, avDataType_t AB_type);
-			GemmTester(avDeviceIndex_t idx, int M, int N, int K, avGemmOperation_t opA, avGemmOperation_t opB, avDataType_t dtype);
+			GemmTester(int M, int N, int K, avGemmOperation_t opA, avGemmOperation_t opB, avDataType_t C_type, avDataType_t AB_type);
+			GemmTester(int M, int N, int K, avGemmOperation_t opA, avGemmOperation_t opB, avDataType_t dtype);
 			double getDifference(const void *alpha, const void *beta) noexcept;
 		};
 
 		class ConcatTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			ConcatTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+			ConcatTester(std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference() noexcept;
 		};
 		class SplitTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			SplitTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+			SplitTester(std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference() noexcept;
 		};
 		class TransposeTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			TransposeTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+			TransposeTester(std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference(const std::vector<int> &ordering) noexcept;
 		};
 		class ScaleTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			ScaleTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+			ScaleTester(std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference(const void *alpha) noexcept;
 		};
 		class AddScalarTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			AddScalarTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
+			AddScalarTester(std::initializer_list<int> shape, avDataType_t dtype);
 			double getDifference(const void *scalar) noexcept;
 		};
 		class AddBiasTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t input_dtype;
 			avDataType_t output_dtype;
 			avDataType_t bias_dtype;
 		public:
-			AddBiasTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t dtype);
-			AddBiasTester(avDeviceIndex_t idx, std::initializer_list<int> shape, avDataType_t input_dtype, avDataType_t output_dtype, avDataType_t bias_dtype);
-			double getDifference(const void *alpha3, const void *alpha1, const void *alpha2, const void *beta1, const void *beta2) noexcept;
+			AddBiasTester(std::initializer_list<int> shape, avDataType_t dtype);
+			AddBiasTester(std::initializer_list<int> shape, avDataType_t input_dtype, avDataType_t output_dtype, avDataType_t bias_dtype);
+			double getDifference(const void *alpha1, const void *alpha2, const void *beta1, const void *beta2, const void *beta3) noexcept;
 		};
 
 		class UnaryOpTester
@@ -200,12 +193,11 @@ namespace avocado
 		class LossFunctionTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			avLossType_t loss_type;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			LossFunctionTester(avDeviceIndex_t idx, avLossType_t loss_type, std::vector<int> shape, avDataType_t dtype);
+			LossFunctionTester(avLossType_t loss_type, std::vector<int> shape, avDataType_t dtype);
 			double getDifferenceLoss() noexcept;
 			double getDifferenceGradient(const void *alpha, const void *beta, bool isFused) noexcept;
 		};
@@ -213,12 +205,11 @@ namespace avocado
 		class OptimizerTester
 		{
 		private:
-			avDeviceIndex_t device_index;
 			OptimizerWrapper optimizer;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			OptimizerTester(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype);
+			OptimizerTester(std::vector<int> shape, avDataType_t dtype);
 			void set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
 			double getDifference(const void *alpha, const void *beta) noexcept;
 		};
@@ -226,24 +217,22 @@ namespace avocado
 		class RegularizerTest
 		{
 		private:
-			avDeviceIndex_t device_index;
 			std::vector<int> shape;
 			avDataType_t dtype;
 		public:
-			RegularizerTest(avDeviceIndex_t idx, std::vector<int> shape, avDataType_t dtype);
-			double getDifference(const void *coefficient, const void *offset) noexcept;
+			RegularizerTest(std::vector<int> shape, avDataType_t dtype);
+			double getDifference(const void *scale, const void *offset) noexcept;
 		};
 
 		class Im2rowTest
 		{
 		private:
-			avDeviceIndex_t device_index;
 			ConvolutionWrapper config;
 			std::vector<int> input_shape;
 			std::vector<int> filter_shape;
 			avDataType_t dtype;
 		public:
-			Im2rowTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype);
+			Im2rowTest(std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype);
 			void set(avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding, const std::array<int, 3> &dilation,
 					int groups, const void *paddingValue);
 			double getDifference() noexcept;
@@ -252,14 +241,13 @@ namespace avocado
 		class WinogradTest
 		{
 		private:
-			avDeviceIndex_t device_index;
 			ConvolutionWrapper config;
 			std::vector<int> input_shape;
 			std::vector<int> filter_shape;
 			avDataType_t dtype;
 			int transform_size;
 		public:
-			WinogradTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype, int transformSize);
+			WinogradTest(std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype, int transformSize);
 			void set(avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding, int groups, const void *paddingValue);
 			double getDifferenceWeight() noexcept;
 			double getDifferenceInput() noexcept;
@@ -271,13 +259,12 @@ namespace avocado
 		class ConvolutionTest
 		{
 		private:
-			avDeviceIndex_t device_index;
 			ConvolutionWrapper config;
 			std::vector<int> input_shape;
 			std::vector<int> filter_shape;
 			avDataType_t dtype;
 		public:
-			ConvolutionTest(avDeviceIndex_t idx, std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype);
+			ConvolutionTest(std::vector<int> inputShape, std::vector<int> filterShape, avDataType_t dtype);
 			void set(avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding, const std::array<int, 3> &dilation,
 					int groups, const void *paddingValue);
 			double getDifferenceInference(const void *alpha, const void *beta) noexcept;

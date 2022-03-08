@@ -289,7 +289,7 @@ namespace avocado
 #endif
 				m_device_index = other.m_device_index;
 				m_size = size;
-				m_offset = offset; // offset is added twice in data<T>()
+				m_offset = offset;
 				m_is_owning = false;
 			}
 			void MemoryDescriptor::destroy()
@@ -870,7 +870,7 @@ namespace avocado
 				{
 					DescriptorPool<ContextDescriptor> tmp;
 					for(int i = 0; i < get_number_of_devices(); i++)
-					tmp.create(i, true);
+						tmp.create(i, true);
 					return tmp;
 				}
 				catch (std::exception &e)
