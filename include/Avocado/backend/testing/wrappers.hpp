@@ -59,11 +59,11 @@ namespace avocado
 		{
 		private:
 			avDeviceIndex_t m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
-			avTensorDescriptor_t m_tensor_descriptor = AVOCADO_INVALID_DESCRIPTOR;
-			avMemoryDescriptor_t m_memory_descriptor = AVOCADO_INVALID_DESCRIPTOR;
+			avTensorDescriptor_t m_tensor_descriptor = AVOCADO_NULL_DESCRIPTOR;
+			avMemoryDescriptor_t m_memory_descriptor = AVOCADO_NULL_DESCRIPTOR;
 
-			avTensorDescriptor_t m_ref_tensor_descriptor = AVOCADO_INVALID_DESCRIPTOR;
-			avMemoryDescriptor_t m_ref_memory_descriptor = AVOCADO_INVALID_DESCRIPTOR;
+			avTensorDescriptor_t m_ref_tensor_descriptor = AVOCADO_NULL_DESCRIPTOR;
+			avMemoryDescriptor_t m_ref_memory_descriptor = AVOCADO_NULL_DESCRIPTOR;
 			mutable int m_sync = 0;
 		public:
 			TensorWrapper() = default;

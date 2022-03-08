@@ -36,7 +36,9 @@ namespace avocado
 	namespace backend
 	{
 		ContextWrapper::ContextWrapper(avDeviceIndex_t device, bool isDefault, bool isSynchronized) :
-				m_device_index(device), m_is_default(isDefault), m_is_synchronized(isDefault or isSynchronized)
+				m_device_index(device),
+				m_is_default(isDefault),
+				m_is_synchronized(isDefault or isSynchronized)
 		{
 			if (m_is_default)
 			{
@@ -61,10 +63,14 @@ namespace avocado
 			refCreateContextDescriptor(&m_ref_desc);
 		}
 		ContextWrapper::ContextWrapper(ContextWrapper &&other) noexcept :
-		m_desc(other.m_desc), m_ref_desc(other.m_ref_desc), m_device_index(other.m_device_index), m_is_default(other.m_is_default), m_is_synchronized(other.m_is_synchronized)
+				m_desc(other.m_desc),
+				m_ref_desc(other.m_ref_desc),
+				m_device_index(other.m_device_index),
+				m_is_default(other.m_is_default),
+				m_is_synchronized(other.m_is_synchronized)
 		{
-			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
-			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_desc = AVOCADO_NULL_DESCRIPTOR;
+			other.m_ref_desc = AVOCADO_NULL_DESCRIPTOR;
 			other.m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
 		}
 		ContextWrapper& ContextWrapper::operator=(ContextWrapper &&other) noexcept
@@ -78,7 +84,7 @@ namespace avocado
 		}
 		ContextWrapper::~ContextWrapper()
 		{
-			if (m_desc != AVOCADO_INVALID_DESCRIPTOR and not m_is_default)
+			if (m_desc != AVOCADO_NULL_DESCRIPTOR and not m_is_default)
 			{
 #if USE_CPU
 				cpuDestroyContextDescriptor(m_desc);
@@ -88,7 +94,7 @@ namespace avocado
 				openclDestroyContextDescriptor(m_desc);
 #endif
 			}
-			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_ref_desc != AVOCADO_NULL_DESCRIPTOR)
 				refDestroyContextDescriptor(m_ref_desc);
 		}
 		void ContextWrapper::synchronize() const
@@ -128,17 +134,17 @@ namespace avocado
 			zeroall();
 		}
 		TensorWrapper::TensorWrapper(TensorWrapper &&other) noexcept :
-		m_device_index(other.m_device_index),
-		m_tensor_descriptor(other.m_tensor_descriptor),
-		m_memory_descriptor(other.m_memory_descriptor),
-		m_ref_tensor_descriptor(other.m_ref_tensor_descriptor),
-		m_ref_memory_descriptor(other.m_ref_memory_descriptor)
+				m_device_index(other.m_device_index),
+				m_tensor_descriptor(other.m_tensor_descriptor),
+				m_memory_descriptor(other.m_memory_descriptor),
+				m_ref_tensor_descriptor(other.m_ref_tensor_descriptor),
+				m_ref_memory_descriptor(other.m_ref_memory_descriptor)
 		{
 			other.m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
-			other.m_tensor_descriptor = AVOCADO_INVALID_DESCRIPTOR;
-			other.m_memory_descriptor = AVOCADO_INVALID_DESCRIPTOR;
-			other.m_ref_tensor_descriptor = AVOCADO_INVALID_DESCRIPTOR;
-			other.m_ref_memory_descriptor = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_tensor_descriptor = AVOCADO_NULL_DESCRIPTOR;
+			other.m_memory_descriptor = AVOCADO_NULL_DESCRIPTOR;
+			other.m_ref_tensor_descriptor = AVOCADO_NULL_DESCRIPTOR;
+			other.m_ref_memory_descriptor = AVOCADO_NULL_DESCRIPTOR;
 		}
 		TensorWrapper& TensorWrapper::operator=(TensorWrapper &&other) noexcept
 		{
@@ -152,24 +158,24 @@ namespace avocado
 		TensorWrapper::~TensorWrapper() noexcept
 		{
 #if USE_CPU
-			if (m_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
-			cpuDestroyTensorDescriptor(m_tensor_descriptor);
-			if (m_memory_descriptor != AVOCADO_INVALID_DESCRIPTOR)
-			cpuDestroyMemoryDescriptor(m_memory_descriptor);
+			if (m_tensor_descriptor != AVOCADO_NULL_DESCRIPTOR)
+				cpuDestroyTensorDescriptor(m_tensor_descriptor);
+			if (m_memory_descriptor != AVOCADO_NULL_DESCRIPTOR)
+				cpuDestroyMemoryDescriptor(m_memory_descriptor);
 #elif USE_CUDA
-			if (m_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_tensor_descriptor != AVOCADO_NULL_DESCRIPTOR)
 				cudaDestroyTensorDescriptor(m_tensor_descriptor);
-			if (m_memory_descriptor != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_memory_descriptor != AVOCADO_NULL_DESCRIPTOR)
 				cudaDestroyMemoryDescriptor(m_memory_descriptor);
 #elif USE_OPENCL
-			if (m_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_tensor_descriptor != AVOCADO_NULL_DESCRIPTOR)
 			openclDestroyTensorDescriptor(m_tensor_descriptor);
-			if (m_memory_descriptor != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_memory_descriptor != AVOCADO_NULL_DESCRIPTOR)
 			openclDestroyMemoryDescriptor(m_memory_descriptor);
 #endif
-			if (m_ref_tensor_descriptor != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_ref_tensor_descriptor != AVOCADO_NULL_DESCRIPTOR)
 				refDestroyTensorDescriptor(m_ref_tensor_descriptor);
-			if (m_ref_memory_descriptor != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_ref_memory_descriptor != AVOCADO_NULL_DESCRIPTOR)
 				refDestroyMemoryDescriptor(m_ref_memory_descriptor);
 		}
 
@@ -347,11 +353,11 @@ namespace avocado
 			refCreateOptimizerDescriptor(&m_ref_desc);
 		}
 		OptimizerWrapper::OptimizerWrapper(OptimizerWrapper &&other) noexcept :
-		m_desc(other.m_desc),
-		m_ref_desc(other.m_ref_desc)
+				m_desc(other.m_desc),
+				m_ref_desc(other.m_ref_desc)
 		{
-			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
-			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_desc = AVOCADO_NULL_DESCRIPTOR;
+			other.m_ref_desc = AVOCADO_NULL_DESCRIPTOR;
 		}
 		OptimizerWrapper& OptimizerWrapper::operator=(OptimizerWrapper &&other) noexcept
 		{
@@ -361,7 +367,7 @@ namespace avocado
 		}
 		OptimizerWrapper::~OptimizerWrapper()
 		{
-			if (m_desc != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_desc != AVOCADO_NULL_DESCRIPTOR)
 			{
 #if USE_CPU
 				cpuDestroyOptimizerDescriptor(m_desc);
@@ -371,10 +377,11 @@ namespace avocado
 				openclDestroyOptimizerDescriptor(m_desc);
 #endif
 			}
-			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_ref_desc != AVOCADO_NULL_DESCRIPTOR)
 				refDestroyOptimizerDescriptor(m_ref_desc);
 		}
-		void OptimizerWrapper::set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags)
+		void OptimizerWrapper::set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients,
+				const std::array<bool, 4> &flags)
 		{
 #if USE_CPU
 			cpuSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
@@ -387,7 +394,7 @@ namespace avocado
 		}
 		size_t OptimizerWrapper::getWorkspaceSize(const TensorWrapper &weights)
 		{
-			avSize_t result;
+			av_int64 result;
 			refGetOptimizerWorkspaceSize(m_ref_desc, weights.getRefDescriptor(), &result);
 			return result;
 		}
@@ -405,12 +412,12 @@ namespace avocado
 			refCreateConvolutionDescriptor(&m_ref_desc);
 		}
 		ConvolutionWrapper::ConvolutionWrapper(ConvolutionWrapper &&other) noexcept :
-		nbDims(other.nbDims),
-		m_desc(other.m_desc),
-		m_ref_desc(other.m_ref_desc)
+				nbDims(other.nbDims),
+				m_desc(other.m_desc),
+				m_ref_desc(other.m_ref_desc)
 		{
-			other.m_desc = AVOCADO_INVALID_DESCRIPTOR;
-			other.m_ref_desc = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_desc = AVOCADO_NULL_DESCRIPTOR;
+			other.m_ref_desc = AVOCADO_NULL_DESCRIPTOR;
 		}
 		ConvolutionWrapper& ConvolutionWrapper::operator=(ConvolutionWrapper &&other) noexcept
 		{
@@ -421,7 +428,7 @@ namespace avocado
 		}
 		ConvolutionWrapper::~ConvolutionWrapper()
 		{
-			if (m_desc != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_desc != AVOCADO_NULL_DESCRIPTOR)
 			{
 #if USE_CPU
 				cpuDestroyConvolutionDescriptor(m_desc);
@@ -431,7 +438,7 @@ namespace avocado
 				openclDestroyConvolutionDescriptor(m_desc);
 #endif
 			}
-			if (m_ref_desc != AVOCADO_INVALID_DESCRIPTOR)
+			if (m_ref_desc != AVOCADO_NULL_DESCRIPTOR)
 				refDestroyConvolutionDescriptor(m_ref_desc);
 		}
 		void ConvolutionWrapper::set(avConvolutionMode_t mode, const std::array<int, 3> &padding, const std::array<int, 3> &strides,

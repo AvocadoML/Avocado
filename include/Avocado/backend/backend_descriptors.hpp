@@ -69,26 +69,26 @@ namespace avocado
 					int8_t *m_data = nullptr;
 #endif
 					avDeviceIndex_t m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
-					avSize_t m_size = 0;
-					avSize_t m_offset = 0;
+					av_int64 m_size = 0;
+					av_int64 m_offset = 0;
 					bool m_is_owning = false;
 				public:
 					static constexpr av_int64 descriptor_type = 1;
 
 					MemoryDescriptor() = default;
 #if USE_CUDA or USE_OPENCL
-					MemoryDescriptor(avDeviceIndex_t index, avSize_t sizeInBytes);
+					MemoryDescriptor(avDeviceIndex_t index, av_int64 sizeInBytes);
 #else
-					MemoryDescriptor(avSize_t sizeInBytes);
+					MemoryDescriptor(av_int64 sizeInBytes);
 #endif
-					MemoryDescriptor(const MemoryDescriptor &other, avSize_t size, avSize_t offset);
+					MemoryDescriptor(const MemoryDescriptor &other, av_int64 size, av_int64 offset);
 					MemoryDescriptor(const MemoryDescriptor &other) = delete;
 					MemoryDescriptor(MemoryDescriptor &&other);
 					MemoryDescriptor& operator=(const MemoryDescriptor &other) = delete;
 					MemoryDescriptor& operator=(MemoryDescriptor &&other);
 					~MemoryDescriptor();
-					explicit operator bool() const noexcept;
-					avSize_t size() const noexcept;
+					bool isNull() const noexcept;
+					av_int64 size() const noexcept;
 					avDeviceIndex_t device() const noexcept;
 					static std::string className();
 
@@ -96,14 +96,14 @@ namespace avocado
 					 * \brief This method allocates new memory block and sets up the descriptor.
 					 */
 #if USE_CUDA or USE_OPENCL
-					void create(avDeviceIndex_t index, avSize_t sizeInBytes);
+					void create(avDeviceIndex_t index, av_int64 sizeInBytes);
 #else
-					void create(avSize_t sizeInBytes);
+					void create(av_int64 sizeInBytes);
 #endif
 					/**
 					 * \brief Creates a non-owning view of another memory block.
 					 */
-					void create(const MemoryDescriptor &other, avSize_t size, avSize_t offset);
+					void create(const MemoryDescriptor &other, av_int64 size, av_int64 offset);
 
 					/**
 					 * \brief This method deallocates underlying memory and resets the descriptor.
@@ -151,7 +151,7 @@ namespace avocado
 #endif
 					avDeviceIndex_t m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
 					mutable MemoryDescriptor m_workspace;
-					mutable avSize_t m_workspace_size = 0;
+					mutable av_int64 m_workspace_size = 0;
 				public:
 					static constexpr av_int64 descriptor_type = 2;
 
@@ -212,7 +212,7 @@ namespace avocado
 					int operator[](int index) const;
 					int dimension(int index) const;
 					int nbDims() const noexcept;
-					avSize_t sizeInBytes() const noexcept;
+					av_int64 sizeInBytes() const noexcept;
 					int getIndex(std::initializer_list<int> indices) const noexcept;
 					int firstDim() const noexcept;
 					int lastDim() const noexcept;
@@ -317,7 +317,7 @@ namespace avocado
 			template<typename T>
 			class DescriptorPool
 			{
-					T m_default_descriptor;
+					T m_null_descriptor;
 					std::vector<std::unique_ptr<T>> m_pool;
 					std::vector<int> m_available_descriptors;
 					std::mutex m_pool_mutex;
@@ -384,19 +384,15 @@ namespace avocado
 					{
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
 //						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
-						if (isValid(desc))
-							return *(m_pool.at(get_descriptor_index(desc)));
+						if (desc == AVOCADO_NULL_DESCRIPTOR)
+							return m_null_descriptor;
 						else
-							throw std::logic_error("invalid descriptor " + std::to_string(desc) + " of type '" + T::className() + "'");
-					}
-					const T& const_get(av_int64 desc) const
-					{
-//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << T::className() << "\n";
-//						std::cout << __FUNCTION__ << " " << __LINE__ << " : " << index << '\n';
-						if (isValid(desc))
-							return *(m_pool.at(get_descriptor_index(desc)));
-						else
-							return m_default_descriptor;
+						{
+							if (isValid(desc))
+								return *(m_pool.at(get_descriptor_index(desc)));
+							else
+								throw std::logic_error("invalid descriptor " + std::to_string(desc) + " for pool type '" + T::className() + "'");
+						}
 					}
 
 					template<typename ... Args>
@@ -478,32 +474,12 @@ namespace avocado
 			OptimizerDescriptor& getOptimizer(avOptimizerDescriptor_t desc);
 			DropoutDescriptor& getDropout(avDropoutDescriptor_t desc);
 
-			const MemoryDescriptor& const_getMemory(avMemoryDescriptor_t desc);
-			const ContextDescriptor& const_getContext(avContextDescriptor_t desc);
-			const TensorDescriptor& const_getTensor(avTensorDescriptor_t desc);
-			const ConvolutionDescriptor& const_getConvolution(avConvolutionDescriptor_t desc);
-			const PoolingDescriptor& const_getPooling(avPoolingDescriptor_t desc);
-			const OptimizerDescriptor& const_getOptimizer(avOptimizerDescriptor_t desc);
-			const DropoutDescriptor& const_getDropout(avDropoutDescriptor_t desc);
-
 			template<typename T = void>
 			T* getPointer(avMemoryDescriptor_t desc)
 			{
 				try
 				{
 					return getMemory(desc).data<T>();
-				} catch (std::exception &e)
-				{
-					return nullptr;
-				}
-			}
-
-			template<typename T = void>
-			const T* const_getPointer(const avMemoryDescriptor_t desc)
-			{
-				try
-				{
-					return const_getMemory(desc).data<T>();
 				} catch (std::exception &e)
 				{
 					return nullptr;

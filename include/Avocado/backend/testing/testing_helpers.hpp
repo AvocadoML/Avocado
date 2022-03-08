@@ -251,7 +251,7 @@ namespace avocado
 			void set(avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding, int groups, const void *paddingValue);
 			double getDifferenceWeight() noexcept;
 			double getDifferenceInput() noexcept;
-			double getDifferenceOutput(const void *alpha1, const void *alpha2, const void *beta) noexcept;
+			double getDifferenceOutput(const void *alpha1, const void *alpha2, const void *beta, bool useBias, bool useExt) noexcept;
 			double getDifferenceGradient() noexcept;
 			double getDifferenceUpdate(const void *alpha, const void *beta) noexcept;
 		};

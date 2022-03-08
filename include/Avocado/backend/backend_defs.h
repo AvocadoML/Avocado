@@ -27,10 +27,10 @@ namespace avocado
 		{
 #endif
 
-		const int AVOCADO_MAX_TENSOR_DIMENSIONS = 8;
-		const long long AVOCADO_INVALID_DESCRIPTOR = -1;
+		typedef long long int av_int64;
 
-		typedef long long avSize_t;
+		const int AVOCADO_MAX_TENSOR_DIMENSIONS = 8;
+		const av_int64 AVOCADO_NULL_DESCRIPTOR = -1;
 
 		typedef enum
 		{
@@ -245,8 +245,6 @@ namespace avocado
 			AVOCADO_CONVOLUTION_ALGORITHM_WINOGRAD_NON_FUSED, /**<  */
 			AVOCADO_CONVOLUTION_ALGORITHM_WINOGRAD_FUSED /**<  */
 		} avConvolutionAlgorithm_t;
-
-		typedef long long int av_int64;
 
 		/* Opaque type for backend memory block descriptor */
 		typedef av_int64 avMemoryDescriptor_t;

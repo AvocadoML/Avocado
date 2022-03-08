@@ -174,22 +174,26 @@ namespace avocado
 			 */
 
 #if USE_CUDA or USE_OPENCL
-			MemoryDescriptor::MemoryDescriptor(avDeviceIndex_t index, avSize_t sizeInBytes)
+			MemoryDescriptor::MemoryDescriptor(avDeviceIndex_t index, av_int64 sizeInBytes)
 			{
 				create(index, sizeInBytes);
 			}
 #else
-			MemoryDescriptor::MemoryDescriptor(avSize_t sizeInBytes)
+			MemoryDescriptor::MemoryDescriptor(av_int64 sizeInBytes)
 			{
 				create(sizeInBytes);
 			}
 #endif
-			MemoryDescriptor::MemoryDescriptor(const MemoryDescriptor &other, avSize_t size, avSize_t offset)
+			MemoryDescriptor::MemoryDescriptor(const MemoryDescriptor &other, av_int64 size, av_int64 offset)
 			{
 				create(other, size, offset);
 			}
 			MemoryDescriptor::MemoryDescriptor(MemoryDescriptor &&other) :
-					m_data(other.m_data), m_device_index(other.m_device_index), m_size(other.m_size), m_offset(other.m_offset), m_is_owning(other.m_is_owning)
+					m_data(other.m_data),
+					m_device_index(other.m_device_index),
+					m_size(other.m_size),
+					m_offset(other.m_offset),
+					m_is_owning(other.m_is_owning)
 			{
 #if USE_OPENCL
 #else
@@ -221,15 +225,15 @@ namespace avocado
 					exit(-1);
 				}
 			}
-			MemoryDescriptor::operator bool() const noexcept
+			bool MemoryDescriptor::isNull() const noexcept
 			{
 #if USE_OPENCL
-				return m_data != nullptr;
+				return m_data == nullptr;
 #else
-				return m_data != nullptr;
+				return m_data == nullptr;
 #endif
 			}
-			avSize_t MemoryDescriptor::size() const noexcept
+			av_int64 MemoryDescriptor::size() const noexcept
 			{
 				return m_size;
 			}
@@ -242,7 +246,7 @@ namespace avocado
 				return "MemoryDescriptor";
 			}
 #if USE_CUDA or USE_OPENCL
-			void MemoryDescriptor::create(avDeviceIndex_t index, avSize_t sizeInBytes)
+			void MemoryDescriptor::create(avDeviceIndex_t index, av_int64 sizeInBytes)
 			{
 				if (sizeInBytes > 0)
 				{
@@ -263,7 +267,7 @@ namespace avocado
 				m_is_owning = true;
 			}
 #else
-			void MemoryDescriptor::create(avSize_t sizeInBytes)
+			void MemoryDescriptor::create(av_int64 sizeInBytes)
 			{
 				if (sizeInBytes > 0)
 					m_data = new int8_t[sizeInBytes];
@@ -275,14 +279,14 @@ namespace avocado
 				m_is_owning = true;
 			}
 #endif
-			void MemoryDescriptor::create(const MemoryDescriptor &other, avSize_t size, avSize_t offset)
+			void MemoryDescriptor::create(const MemoryDescriptor &other, av_int64 size, av_int64 offset)
 			{
 				if (other.m_is_owning == false)
 					throw std::logic_error("cannot create memory view from non-owning memory descriptor");
 				if (other.m_size < offset + size)
 					throw std::logic_error(
-							"the view would extend beyond the original tensor : " + std::to_string(other.m_size) + " < " + std::to_string(offset) + "+"
-									+ std::to_string(size));
+							"the view would extend beyond the original tensor : " + std::to_string(other.m_size) + " < " + std::to_string(offset)
+									+ "+" + std::to_string(size));
 #if USE_OPENCL
 #else
 				m_data = other.m_data + offset;
@@ -335,7 +339,9 @@ namespace avocado
 							m_stream(other.m_stream), m_handle(other.m_handle),
 #elif USE_OPENCL
 #endif
-							m_device_index(other.m_device_index), m_workspace(std::move(other.m_workspace)), m_workspace_size(other.m_workspace_size)
+					m_device_index(other.m_device_index),
+					m_workspace(std::move(other.m_workspace)),
+					m_workspace_size(other.m_workspace_size)
 			{
 #if USE_CUDA
 				other.m_stream = nullptr;
@@ -436,7 +442,7 @@ namespace avocado
 			}
 			MemoryDescriptor& ContextDescriptor::getWorkspace() const
 			{
-				if (static_cast<bool>(m_workspace) == false)
+				if (m_workspace.isNull())
 				{
 					m_workspace_size = 1 << 23;
 #if USE_CUDA or USE_OPENCL
@@ -472,7 +478,8 @@ namespace avocado
 			 * TensorDescriptor
 			 */
 			TensorDescriptor::TensorDescriptor(std::initializer_list<int> dimensions, avDataType_t dtype) :
-					m_number_of_dimensions(dimensions.size()), m_dtype(dtype)
+					m_number_of_dimensions(dimensions.size()),
+					m_dtype(dtype)
 			{
 				m_dimensions.fill(0);
 				m_strides.fill(0);
@@ -496,9 +503,13 @@ namespace avocado
 			}
 			void TensorDescriptor::set(avDataType_t dtype, int nbDims, const int dimensions[])
 			{
-				if (dimensions == nullptr or nbDims > AVOCADO_MAX_TENSOR_DIMENSIONS)
-					throw std::invalid_argument("");
-				std::memcpy(m_dimensions.data(), dimensions, sizeof(int) * nbDims);
+				if (nbDims < 0 or nbDims > AVOCADO_MAX_TENSOR_DIMENSIONS)
+					throw std::invalid_argument("invalid number of dimensions");
+				if (dimensions == nullptr and nbDims != 0)
+					throw std::invalid_argument("null pointer passed as dimensions array");
+
+				if (dimensions != nullptr)
+					std::memcpy(m_dimensions.data(), dimensions, sizeof(int) * nbDims);
 				m_number_of_dimensions = nbDims;
 				m_dtype = dtype;
 				setup_stride();
@@ -528,7 +539,7 @@ namespace avocado
 			{
 				return m_number_of_dimensions;
 			}
-			avSize_t TensorDescriptor::sizeInBytes() const noexcept
+			av_int64 TensorDescriptor::sizeInBytes() const noexcept
 			{
 				return dataTypeSize(m_dtype) * this->volume();
 			}
@@ -657,8 +668,8 @@ namespace avocado
 			{
 				return "ConvolutionDescriptor";
 			}
-			void ConvolutionDescriptor::set(avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[], const int dilation[], int groups,
-					const void *paddingValue)
+			void ConvolutionDescriptor::set(avConvolutionMode_t mode, int nbDims, const int padding[], const int strides[], const int dilation[],
+					int groups, const void *paddingValue)
 			{
 				if (nbDims < 0 or nbDims > 3)
 					throw std::invalid_argument("");
@@ -814,7 +825,7 @@ namespace avocado
 				if (flags != nullptr)
 					std::memcpy(flags, this->flags.data(), sizeof(this->flags));
 			}
-			void OptimizerDescriptor::get_workspace_size(avSize_t *result, const TensorDescriptor &wDesc) const
+			void OptimizerDescriptor::get_workspace_size(av_int64 *result, const TensorDescriptor &wDesc) const
 			{
 				if (result == nullptr)
 					throw std::invalid_argument("");
@@ -887,8 +898,7 @@ namespace avocado
 					DescriptorPool<ContextDescriptor> tmp;
 					tmp.create();
 					return tmp;
-				}
-				catch (std::exception &e)
+				} catch (std::exception &e)
 				{
 					return DescriptorPool<ContextDescriptor>();
 				}
@@ -925,38 +935,6 @@ namespace avocado
 			DropoutDescriptor& getDropout(avDropoutDescriptor_t desc)
 			{
 				return getPool<DropoutDescriptor>().get(desc);
-			}
-
-			const MemoryDescriptor& const_getMemory(avMemoryDescriptor_t desc)
-			{
-				return getPool<MemoryDescriptor>().const_get(desc);
-			}
-			const ContextDescriptor& const_getContext(avContextDescriptor_t desc)
-			{
-				if (isDefault(desc))
-					return default_context_pool.const_get(desc);
-				else
-					return getPool<ContextDescriptor>().const_get(desc);
-			}
-			const TensorDescriptor& const_getTensor(avTensorDescriptor_t desc)
-			{
-				return getPool<TensorDescriptor>().const_get(desc);
-			}
-			const ConvolutionDescriptor& const_getConvolution(avConvolutionDescriptor_t desc)
-			{
-				return getPool<ConvolutionDescriptor>().const_get(desc);
-			}
-			const PoolingDescriptor& const_getPooling(avPoolingDescriptor_t desc)
-			{
-				return getPool<PoolingDescriptor>().const_get(desc);
-			}
-			const OptimizerDescriptor& const_getOptimizer(avOptimizerDescriptor_t desc)
-			{
-				return getPool<OptimizerDescriptor>().const_get(desc);
-			}
-			const DropoutDescriptor& const_getDropout(avDropoutDescriptor_t desc)
-			{
-				return getPool<DropoutDescriptor>().const_get(desc);
 			}
 
 			bool is_transpose(avGemmOperation_t op) noexcept
