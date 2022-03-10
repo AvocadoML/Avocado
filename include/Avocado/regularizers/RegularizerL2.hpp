@@ -15,11 +15,11 @@ namespace avocado
 
 	class RegularizerL2: public Regularizer
 	{
-			float m_coefficient = 0.0f;
-			float m_offset = 0.0f;
+			double m_scale = 0.0;
+			double m_offset = 0.0;
 		public:
 			RegularizerL2() = default;
-			RegularizerL2(float coefficient, float offset = 0.0f);
+			RegularizerL2(double coefficient, double offset = 0.0f);
 
 			void apply(const Context &context, Parameter &param);
 
