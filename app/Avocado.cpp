@@ -1,9 +1,6 @@
 //============================================================================
 // Name        : Avocado.cpp
 // Author      : Maciej Kozarzewski
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
 //============================================================================
 
 #include <iostream>
@@ -12,7 +9,6 @@
 #include <Avocado/core/Scalar.hpp>
 #include <Avocado/core/DataType.hpp>
 #include <Avocado/math/tensor_operations.hpp>
-#include <Avocado/utils/testing_helpers.hpp>
 
 using namespace avocado;
 using namespace avocado::backend;
@@ -21,16 +17,22 @@ int main()
 {
 	std::cout << Device::hardwareInfo() << std::endl;
 
+	DataType dtype = DataType::FLOAT16;
+	Scalar zero = Scalar::zero(dtype);
+	Scalar one = Scalar::one(dtype);
+
+	std::cout << zero.toString() << "\n" << one.toString() << '\n';
+
 	Context context(Device::cuda(0));
 	Tensor t1( { 100 }, DataType::FLOAT16, Device::cuda(0));
 	Tensor t2( { 100 }, DataType::FLOAT32, Device::cuda(0));
-	initForTest(t1, 0.0f);
-	initForTest(t2, 0.0f);
+//	initForTest(t1, 0.0f);
+//	initForTest(t2, 0.0f);
 
 	Tensor t3(t1.shape(), DataType::FLOAT32, t1.device());
 	math::changeType(context, t3, t1);
 
-	std::cout << diffForTest(t2, t3) << '\n';
+//	std::cout << diffForTest(t2, t3) << '\n';
 
 //	Context context(Device::cpu());
 //	context.synchronize();

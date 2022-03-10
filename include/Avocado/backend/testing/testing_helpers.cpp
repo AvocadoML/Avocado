@@ -36,7 +36,7 @@ namespace
 	void init_for_test(void *ptr, size_t elements, T offset, T minValue, T maxValue)
 	{
 		for (size_t i = 0; i < elements; i++)
-			reinterpret_cast<T*>(ptr)[i] = minValue + 0.5 * (1.0 + sin(i / 10.0f + offset)) * (maxValue - minValue);
+			reinterpret_cast<T*>(ptr)[i] = minValue + 0.5 * (1.0 + sin(i / 10.0 + offset)) * (maxValue - minValue);
 	}
 
 	template<typename T>
@@ -282,19 +282,19 @@ namespace avocado
 			switch (t.dtype())
 			{
 				case AVOCADO_DTYPE_UINT8:
-					init_for_test<uint8_t>(tmp.get(), t.volume(), offset, minValue, maxValue);
+					init_for_test<uint8_t>(tmp.get(), t.volume(), offset, 100 * minValue, 100 * maxValue);
 					break;
 				case AVOCADO_DTYPE_INT8:
-					init_for_test<int8_t>(tmp.get(), t.volume(), offset, minValue, maxValue);
+					init_for_test<int8_t>(tmp.get(), t.volume(), offset, 100 * minValue, 100 * maxValue);
 					break;
 				case AVOCADO_DTYPE_INT16:
-					init_for_test<int16_t>(tmp.get(), t.volume(), offset, minValue, maxValue);
+					init_for_test<int16_t>(tmp.get(), t.volume(), offset, 100 * minValue, 100 * maxValue);
 					break;
 				case AVOCADO_DTYPE_INT32:
-					init_for_test<int32_t>(tmp.get(), t.volume(), offset, minValue, maxValue);
+					init_for_test<int32_t>(tmp.get(), t.volume(), offset, 100 * minValue, 100 * maxValue);
 					break;
 				case AVOCADO_DTYPE_INT64:
-					init_for_test<int64_t>(tmp.get(), t.volume(), offset, minValue, maxValue);
+					init_for_test<int64_t>(tmp.get(), t.volume(), offset, 100 * minValue, 100 * maxValue);
 					break;
 				case AVOCADO_DTYPE_FLOAT16:
 				case AVOCADO_DTYPE_BFLOAT16:
@@ -857,6 +857,42 @@ namespace avocado
 			getMasterContext().synchronize();
 			return diffForTest(output_baseline, output_tested);
 		}
+		AddTensorsTester::AddTensorsTester(std::initializer_list<int> shape, avDataType_t dtype) :
+				AddTensorsTester(shape, dtype, dtype)
+		{
+		}
+		AddTensorsTester::AddTensorsTester(std::initializer_list<int> shape, avDataType_t input_dtype, avDataType_t output_dtype) :
+				shape(shape),
+				input_dtype(input_dtype),
+				output_dtype(output_dtype)
+		{
+		}
+		double AddTensorsTester::getDifference(const void *alpha, const void *beta) noexcept
+		{
+			TensorWrapper input(shape, input_dtype, getDevice());
+			initForTest(input, 0.0);
+
+			TensorWrapper output_baseline(shape, output_dtype, getDevice());
+			TensorWrapper output_tested(shape, output_dtype, getDevice());
+			initForTest(output_baseline, 1.0);
+			initForTest(output_tested, 1.0);
+
+
+			refAddTensors(getContextRefDesc(), alpha, input.getRefDescriptor(), input.getRefMemory(), beta, output_baseline.getRefDescriptor(),
+					output_baseline.getRefMemory());
+#if USE_CPU
+			cpuAddTensors(getContextDesc(), alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#elif USE_CUDA
+			cudaAddTensors(getContextDesc(), alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#elif USE_OPENCL
+			openclAddTensors(getContextDesc(), alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
+					output_tested.getMemory());
+#endif
+			getMasterContext().synchronize();
+			return diffForTest(output_baseline, output_tested);
+		}
 		AddBiasTester::AddBiasTester(std::initializer_list<int> shape, avDataType_t dtype) :
 				AddBiasTester(shape, dtype, dtype, dtype)
 		{
@@ -1104,13 +1140,13 @@ namespace avocado
 			TensorWrapper output_baseline(shape, dtype, getDevice());
 			TensorWrapper output_tested(shape, dtype, getDevice());
 
-			initForTest(input, 0.0);
+			initForTest(input, 0.0, 0.0, 2.0);
 			initForTest(output_baseline, 0.1);
 			initForTest(output_tested, 0.1);
 
 			TensorWrapper scale( { shape[shape.size() - 1] }, dtype, getDevice());
 			TensorWrapper bias( { shape[shape.size() - 1] }, dtype, getDevice());
-			initForTest(scale, 0.0, 1.0);
+			initForTest(scale, 0.0, 0.1, 2.0);
 			initForTest(bias, 1.0);
 
 			TensorWrapper mean_baseline( { shape[shape.size() - 1] }, dtype, getDevice());
@@ -1126,18 +1162,19 @@ namespace avocado
 					output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean_tested.getMemory(),
 					variance_tested.getMemory(), epsilon);
 #elif USE_CUDA
-			cudaBatchNormInference(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
+			cudaBatchNormForward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
 					output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean_tested.getMemory(), variance_tested.getMemory(),
 					epsilon);
 #elif USE_OPENCL
-			openclBatchNormInference(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), beta,
-					output_tested.getDescriptor(), output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(),
-					mean_tested.getMemory(), variance_tested.getMemory(), epsilon);
+			openclBatchNormForward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), beta, output_tested.getDescriptor(),
+					output_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean_tested.getMemory(),
+					variance_tested.getMemory(), epsilon);
 #endif
 			getMasterContext().synchronize();
-			return diffForTest(mean_baseline, mean_tested); // + diffForTest(variance_baseline, variance_tested) + diffForTest(output_baseline, output_tested);
+			return diffForTest(mean_baseline, mean_tested) + diffForTest(variance_baseline, variance_tested)
+					+ diffForTest(output_baseline, output_tested);
 		}
-		double BatchNormTester::getDifferenceBackward(const void *alpha, const void *beta) noexcept
+		double BatchNormTester::getDifferenceBackward(const void *alpha, const void *beta, const void *alpha2, const void *beta2) noexcept
 		{
 			avActivationType_t activation = AVOCADO_ACTIVATION_LINEAR;
 			double epsilon = 1.0e-3;
@@ -1180,7 +1217,7 @@ namespace avocado
 			refBatchNormBackward(0, activation, alpha, input.getRefDescriptor(), input.getRefMemory(), output.getRefDescriptor(),
 					output.getRefMemory(), beta, gradientIn_baseline.getRefDescriptor(), gradientIn_baseline.getRefMemory(),
 					gradientOut_baseline.getRefDescriptor(), gradientOut_baseline.getRefMemory(), scale.getRefDescriptor(), scale.getRefMemory(),
-					mean.getRefMemory(), variance.getRefMemory(), alpha, beta, scaleUpdate_baseline.getRefMemory(),
+					mean.getRefMemory(), variance.getRefMemory(), alpha2, beta2, scaleUpdate_baseline.getRefMemory(),
 					biasUpdate_baseline.getRefMemory(), epsilon);
 
 			initForTest(output, 0.1);
@@ -1189,26 +1226,27 @@ namespace avocado
 					output.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean.getMemory(), variance.getMemory(), epsilon);
 			cpuBatchNormBackward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), output.getDescriptor(),
 					output.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory(), gradientOut_tested.getDescriptor(),
-					gradientOut_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), mean.getMemory(), variance.getMemory(), alpha, beta,
+					gradientOut_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), mean.getMemory(), variance.getMemory(), alpha2, beta2,
 					scaleUpdate_tested.getMemory(), biasUpdate_tested.getMemory(), epsilon);
 #elif USE_CUDA
 			cudaBatchNormForward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), beta, output.getDescriptor(),
 					output.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean.getMemory(), variance.getMemory(), epsilon);
 			cudaBatchNormBackward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), output.getDescriptor(), output.getMemory(),
 					beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory(), gradientOut_tested.getDescriptor(), gradientOut_tested.getMemory(),
-					scale.getDescriptor(), scale.getMemory(), mean.getMemory(), variance.getMemory(), alpha, beta, scaleUpdate_tested.getMemory(),
+					scale.getDescriptor(), scale.getMemory(), mean.getMemory(), variance.getMemory(), alpha2, beta2, scaleUpdate_tested.getMemory(),
 					biasUpdate_tested.getMemory(), epsilon);
 #elif USE_OPENCL
 			openclBatchNormForward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), beta, output.getDescriptor(),
 					output.getMemory(), scale.getDescriptor(), scale.getMemory(), bias.getMemory(), mean.getMemory(), variance.getMemory(), epsilon);
 			openclBatchNormBackward(getContextDesc(), activation, alpha, input.getDescriptor(), input.getMemory(), output.getDescriptor(),
 					output.getMemory(), beta, gradientIn_tested.getDescriptor(), gradientIn_tested.getMemory(), gradientOut_tested.getDescriptor(),
-					gradientOut_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), mean.getMemory(), variance.getMemory(), alpha, beta,
+					gradientOut_tested.getMemory(), scale.getDescriptor(), scale.getMemory(), mean.getMemory(), variance.getMemory(), alpha2, beta2,
 					scaleUpdate_tested.getMemory(), biasUpdate_tested.getMemory(), epsilon);
 #endif
 			getMasterContext().synchronize();
+
 			return diffForTest(scaleUpdate_baseline, scaleUpdate_tested) + diffForTest(biasUpdate_baseline, biasUpdate_tested)
-					+ diffForTest(gradientOut_tested, gradientOut_baseline) + diffForTest(gradientIn_tested, gradientIn_baseline);
+					+ diffForTest(gradientOut_baseline, gradientOut_tested) + diffForTest(gradientIn_baseline, gradientIn_tested);
 		}
 
 		LossFunctionTester::LossFunctionTester(avLossType_t loss_type, std::vector<int> shape, avDataType_t dtype) :
@@ -1378,16 +1416,17 @@ namespace avocado
 				dtype(dtype)
 		{
 		}
-		void Im2rowTest::set(avConvolutionMode_t mode, const std::array<int, 3> &strides, const std::array<int, 3> &padding,
+		void Im2rowTest::set(avConvolutionMode_t mode, const std::array<int, 3> &padding, const std::array<int, 3> &strides,
 				const std::array<int, 3> &dilation, int groups, const void *paddingValue)
 		{
-			config.set(mode, strides, padding, dilation, groups, paddingValue);
+			config.set(mode, padding, strides, dilation, groups, paddingValue);
 		}
 		double Im2rowTest::getDifference() noexcept
 		{
 			TensorWrapper input(input_shape, dtype, getDevice());
 			TensorWrapper filter(filter_shape, dtype, getDevice());
 			initForTest(input, 1.0);
+			input.setall(1.0f);
 			std::vector<int> output_shape = config.getOutputShape(input, filter);
 
 			int output_tiles = 1;
@@ -1397,6 +1436,7 @@ namespace avocado
 			int filters_tiles = 1;
 			for (size_t i = 1; i < filter_shape.size(); i++)
 				filters_tiles *= filter_shape[i];
+
 			std::vector<int> matrix_shape { output_tiles, filters_tiles };
 
 			TensorWrapper matrix_baseline(matrix_shape, dtype, getDevice());
@@ -1415,6 +1455,8 @@ namespace avocado
 					matrix_tested.getDescriptor(), matrix_tested.getMemory());
 #endif
 			getMasterContext().synchronize();
+//			printForTest(matrix_baseline);
+//			printForTest(matrix_tested);
 			return diffForTest(matrix_baseline, matrix_tested);
 		}
 
@@ -1562,9 +1604,9 @@ namespace avocado
 					matrices.getDescriptor(), matrices.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), bias.getDescriptor(),
 					bias_mem, alpha2, ext.getDescriptor(), ext_mem, beta, AVOCADO_ACTIVATION_LINEAR);
 #elif USE_CUDA
-			cudaWinogradOutputTransform(getContextDesc(), config.getDescriptor(), transform_size, weights.getDescriptor(), alpha1,
-					matrices.getDescriptor(), matrices.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), bias.getDescriptor(),
-					bias_mem, alpha2, ext.getDescriptor(), ext_mem, beta, AVOCADO_ACTIVATION_LINEAR);
+			cudaWinogradOutputTransform(getContextDesc(), config.getDescriptor(), transform_size, weights.getDescriptor(), alpha1, matrices.getDescriptor(),
+					matrices.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), bias.getDescriptor(), bias_mem, alpha2, ext.getDescriptor(),
+					ext_mem, beta, AVOCADO_ACTIVATION_LINEAR);
 #elif USE_OPENCL
 			openclWinogradOutputTransform(getContextDesc(), config.getDescriptor(), transform_size, weights.getDescriptor(), alpha1,
 					matrices.getDescriptor(), matrices.getMemory(), output_tested.getDescriptor(), output_tested.getMemory(), bias.getDescriptor(),

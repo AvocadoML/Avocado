@@ -27,7 +27,7 @@
 #  include <cuda_fp16.h>
 #  include <cublas_v2.h>
 #elif USE_OPENCL
-#  include <CL/cl2.hpp>
+#  include <CL/cl.hpp>
 #else
 #endif
 

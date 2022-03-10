@@ -63,8 +63,8 @@ namespace avocado
 		namespace cuda
 		{
 #elif USE_OPENCL
-			namespace opencl
-			{
+		namespace opencl
+		{
 #else
 				namespace reference
 				{
@@ -83,7 +83,7 @@ namespace avocado
 					return tmp;
 				}();
 #elif USE_OPENCL
-
+				static const int result = 0;
 #else
 				static const int result = 1;
 #endif
@@ -270,9 +270,9 @@ namespace avocado
 			void MemoryDescriptor::create(av_int64 sizeInBytes)
 			{
 				if (sizeInBytes > 0)
-					m_data = new int8_t[sizeInBytes];
+				m_data = new int8_t[sizeInBytes];
 				else
-					m_data = nullptr;
+				m_data = nullptr;
 				m_device_index = 0;
 				m_offset = 0;
 				m_size = sizeInBytes;
@@ -311,7 +311,7 @@ namespace avocado
 #elif USE_OPENCL
 #else
 				if (m_is_owning)
-					delete[] m_data;
+				delete[] m_data;
 				m_data = nullptr;
 #endif
 				m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
@@ -448,7 +448,7 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 					m_workspace.create(m_device_index, m_workspace_size); // lazy allocation of 8MB workspace
 #else
-					m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
+							m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
 #endif
 				}
 				return m_workspace;
@@ -874,36 +874,24 @@ namespace avocado
 				const int idx = get_descriptor_index(desc);
 				return 0 <= idx and idx < get_number_of_devices();
 			}
-#if USE_CUDA
+
 			thread_local DescriptorPool<ContextDescriptor> default_context_pool = []()
 			{
 				try
 				{
 					DescriptorPool<ContextDescriptor> tmp;
-					for(int i = 0; i < get_number_of_devices(); i++)
+					for (int i = 0; i < get_number_of_devices(); i++)
+#if USE_CUDA or USE_OPENCL
 						tmp.create(i, true);
-					return tmp;
-				}
-				catch (std::exception &e)
-				{
-					return DescriptorPool<ContextDescriptor>();
-				}
-			}();
-#elif USE_OPENCL
 #else
-			thread_local DescriptorPool<ContextDescriptor> default_context_pool = []()
-			{
-				try
-				{
-					DescriptorPool<ContextDescriptor> tmp;
-					tmp.create();
-					return tmp;
-				} catch (std::exception &e)
-				{
-					return DescriptorPool<ContextDescriptor>();
-				}
-			}();
+						tmp.create();
 #endif
+				return tmp;
+			} catch (std::exception &e)
+			{
+				return DescriptorPool<ContextDescriptor>();
+			}
+		}	();
 
 			MemoryDescriptor& getMemory(avMemoryDescriptor_t desc)
 			{
