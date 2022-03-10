@@ -39,6 +39,21 @@ namespace avocado
 		m_use_beta = b;
 		return *this;
 	}
+	BatchNormalization& BatchNormalization::history(int historySize) noexcept
+	{
+		m_history_size = historySize;
+		return *this;
+	}
+	BatchNormalization& BatchNormalization::epsilon(double epsilon) noexcept
+	{
+		m_epsilon = epsilon;
+		return *this;
+	}
+
+	double BatchNormalization::getEpsilon() const noexcept
+	{
+		return m_epsilon;
+	}
 
 	void BatchNormalization::setInputShape(const std::vector<Shape> &shapes)
 	{
@@ -95,7 +110,7 @@ namespace avocado
 		m_total_steps = 0;
 		m_running_id = -1;
 	}
-	void BatchNormalization::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
+	void BatchNormalization::forward(const std::vector<Tensor> &input, Tensor &output)
 	{
 		assert(input.size() == 1);
 
@@ -107,8 +122,7 @@ namespace avocado
 		{
 			Tensor estimatedMean = getBias().getParam().view( { last_dim });
 			Tensor estimatedVariance = getWeights().getParam().view( { last_dim });
-			math::batchNormInference(context(), alpha, beta, input[0], output, scale, bias, estimatedMean, estimatedVariance, m_epsilon,
-					m_nonlinearity);
+			math::batchNormInference(context(), 1, 0, input[0], output, scale, bias, estimatedMean, estimatedVariance, m_epsilon, m_nonlinearity);
 		}
 		else
 		{
@@ -116,12 +130,12 @@ namespace avocado
 			Tensor savedMean = m_running_mean.view( { last_dim }, m_running_id * last_dim);
 			Tensor savedVariance = m_running_variance.view( { last_dim }, m_running_id * last_dim);
 
-			math::batchNormForward(context(), alpha, beta, input[0], output, scale, bias, savedMean, savedVariance, m_epsilon, m_nonlinearity);
+			math::batchNormForward(context(), 1, 0, input[0], output, scale, bias, savedMean, savedVariance, m_epsilon, m_nonlinearity);
 			m_total_steps++;
 		}
 	}
 	void BatchNormalization::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut,
-			Scalar alpha, Scalar beta)
+			Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(gradientIn.size() == 1);
@@ -134,8 +148,8 @@ namespace avocado
 		Tensor biasUpdate = getBias().getUpdate().view( { last_dim }, last_dim);
 		Tensor scaleUpdate = getWeights().getUpdate().view( { last_dim }, last_dim);
 
-		math::batchNormBackward(context(), alpha, input[0], output, beta, gradientIn[0], gradientOut, scale, savedMean, savedVariance, 1, 1,
-				scaleUpdate, biasUpdate, m_epsilon, m_nonlinearity);
+		math::batchNormBackward(context(), 1, input[0], output, beta, gradientIn[0], gradientOut, scale, savedMean, savedVariance, 1, 1, scaleUpdate,
+				biasUpdate, m_epsilon, m_nonlinearity);
 	}
 	void BatchNormalization::learn()
 	{

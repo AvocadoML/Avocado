@@ -53,6 +53,7 @@ namespace avocado
 				{
 					auto old_layer = graph.replaceLayer(i, Affine(toString(graph.getLayer(i).getNonlinearity())));
 
+					const double epsilon = static_cast<BatchNormalization&>(graph.getLayer(i)).getEpsilon();
 					const Tensor &batchnorm_weights = old_layer->getWeights().getParam();
 					const Tensor &batchnorm_bias = old_layer->getBias().getParam();
 
@@ -61,7 +62,7 @@ namespace avocado
 
 					for (int j = 0; j < batchnorm_weights.lastDim(); j++)
 					{
-						float scale = batchnorm_weights.get<float>( { 1, j }) / batchnorm_weights.get<float>( { 0, j });
+						float scale = batchnorm_weights.get<float>( { 1, j }) / std::sqrt(epsilon + batchnorm_weights.get<float>( { 0, j }));
 						float shift = batchnorm_bias.get<float>( { 1, j }) - scale * batchnorm_bias.get<float>( { 0, j });
 						affine_weights.set(scale, { j });
 						affine_bias.set(shift, { j });

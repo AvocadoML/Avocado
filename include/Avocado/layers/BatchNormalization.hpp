@@ -29,6 +29,10 @@ namespace avocado
 
 			BatchNormalization& useGamma(bool b) noexcept;
 			BatchNormalization& useBeta(bool b) noexcept;
+			BatchNormalization& history(int historySize) noexcept;
+			BatchNormalization& epsilon(double epsilon) noexcept;
+
+			double getEpsilon() const noexcept;
 
 			void setInputShape(const std::vector<Shape> &shapes);
 			Shape getOutputShape() const;
@@ -43,9 +47,8 @@ namespace avocado
 			BatchNormalization* clone(const Json &config) const;
 
 			void init();
-			void forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta);
-			void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
-					Scalar beta);
+			void forward(const std::vector<Tensor> &input, Tensor &output);
+			void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta);
 			void learn();
 	};
 
