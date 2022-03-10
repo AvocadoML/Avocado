@@ -6,9 +6,6 @@
  */
 
 #include <CpuBackend/cpu_backend.h>
-#if not USE_CPU
-#  include <ReferenceBackend/reference_backend.h>
-#endif
 
 namespace avocado
 {

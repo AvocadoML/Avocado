@@ -30,6 +30,9 @@ namespace avocado
 	{
 		using namespace avocado::backend;
 
+		/*
+		 * Memory descriptor wrapper.
+		 */
 		MemoryDescWrapper::MemoryDescWrapper(Device device, size_t sizeInBytes)
 		{
 			switch (device.type())
@@ -37,19 +40,19 @@ namespace avocado
 				case DeviceType::CPU:
 				{
 					avStatus_t status = cpuCreateMemoryDescriptor(&m_descriptor, sizeInBytes);
-					CHECK_CPU_STATUS(status);
+					CHECK_CPU_STATUS(status)
 					break;
 				}
 				case DeviceType::CUDA:
 				{
 					avStatus_t status = cudaCreateMemoryDescriptor(&m_descriptor, device.index(), sizeInBytes);
-					CHECK_CUDA_STATUS(status);
+					CHECK_CUDA_STATUS(status)
 					break;
 				}
 				case DeviceType::OPENCL:
 				{
 					avStatus_t status = openclCreateMemoryDescriptor(&m_descriptor, device.index(), sizeInBytes);
-					CHECK_OPENCL_STATUS(status);
+					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -61,19 +64,19 @@ namespace avocado
 				case DeviceType::CPU:
 				{
 					avStatus_t status = cpuCreateMemoryView(&m_descriptor, desc, sizeInBytes, offsetInBytes);
-					CHECK_CPU_STATUS(status);
+					CHECK_CPU_STATUS(status)
 					break;
 				}
 				case DeviceType::CUDA:
 				{
 					avStatus_t status = cudaCreateMemoryView(&m_descriptor, desc, sizeInBytes, offsetInBytes);
-					CHECK_CUDA_STATUS(status);
+					CHECK_CUDA_STATUS(status)
 					break;
 				}
 				case DeviceType::OPENCL:
 				{
 					avStatus_t status = openclCreateMemoryView(&m_descriptor, desc, sizeInBytes, offsetInBytes);
-					CHECK_OPENCL_STATUS(status);
+					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -81,7 +84,7 @@ namespace avocado
 		MemoryDescWrapper::MemoryDescWrapper(MemoryDescWrapper &&other) :
 				m_descriptor(other.m_descriptor)
 		{
-			other.m_descriptor = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_descriptor = AVOCADO_NULL_DESCRIPTOR;
 		}
 		MemoryDescWrapper& MemoryDescWrapper::operator=(MemoryDescWrapper &&other)
 		{
@@ -110,6 +113,9 @@ namespace avocado
 			}
 		}
 
+		/*
+		 * Tensor descriptor wrapper.
+		 */
 		TensorDescWrapper::TensorDescWrapper(Device device)
 		{
 			switch (device.type())
@@ -117,19 +123,19 @@ namespace avocado
 				case DeviceType::CPU:
 				{
 					avStatus_t status = cpuCreateTensorDescriptor(&m_descriptor);
-					CHECK_CPU_STATUS(status);
+					CHECK_CPU_STATUS(status)
 					break;
 				}
 				case DeviceType::CUDA:
 				{
 					avStatus_t status = cudaCreateTensorDescriptor(&m_descriptor);
-					CHECK_CUDA_STATUS(status);
+					CHECK_CUDA_STATUS(status)
 					break;
 				}
 				case DeviceType::OPENCL:
 				{
 					avStatus_t status = openclCreateTensorDescriptor(&m_descriptor);
-					CHECK_OPENCL_STATUS(status);
+					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -137,7 +143,7 @@ namespace avocado
 		TensorDescWrapper::TensorDescWrapper(TensorDescWrapper &&other) :
 				m_descriptor(other.m_descriptor)
 		{
-			other.m_descriptor = AVOCADO_INVALID_DESCRIPTOR;
+			other.m_descriptor = AVOCADO_NULL_DESCRIPTOR;
 		}
 		TensorDescWrapper& TensorDescWrapper::operator=(TensorDescWrapper &&other)
 		{
@@ -172,19 +178,193 @@ namespace avocado
 				case DeviceType::CPU:
 				{
 					avStatus_t status = cpuSetTensorDescriptor(m_descriptor, static_cast<avDataType_t>(dtype), shape.length(), shape.data());
-					CHECK_CPU_STATUS(status);
+					CHECK_CPU_STATUS(status)
 					break;
 				}
 				case DeviceType::CUDA:
 				{
 					avStatus_t status = cudaSetTensorDescriptor(m_descriptor, static_cast<avDataType_t>(dtype), shape.length(), shape.data());
-					CHECK_CUDA_STATUS(status);
+					CHECK_CUDA_STATUS(status)
 					break;
 				}
 				case DeviceType::OPENCL:
 				{
 					avStatus_t status = openclSetTensorDescriptor(m_descriptor, static_cast<avDataType_t>(dtype), shape.length(), shape.data());
-					CHECK_OPENCL_STATUS(status);
+					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Convolution descriptor wrapper.
+		 */
+		ConvolutionDescWrapper::ConvolutionDescWrapper(Device device)
+		{
+			switch (device.type())
+			{
+				case DeviceType::CPU:
+				{
+					avStatus_t status = cpuCreateConvolutionDescriptor(&m_descriptor);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					avStatus_t status = cudaCreateConvolutionDescriptor(&m_descriptor);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+					avStatus_t status = openclCreateConvolutionDescriptor(&m_descriptor);
+					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
+		}
+		ConvolutionDescWrapper::ConvolutionDescWrapper(ConvolutionDescWrapper &&other) :
+				m_descriptor(other.m_descriptor)
+		{
+			other.m_descriptor = AVOCADO_NULL_DESCRIPTOR;
+		}
+		ConvolutionDescWrapper& ConvolutionDescWrapper::operator=(ConvolutionDescWrapper &&other)
+		{
+			std::swap(this->m_descriptor, other.m_descriptor);
+			return *this;
+		}
+		ConvolutionDescWrapper::~ConvolutionDescWrapper()
+		{
+			avStatus_t status = AVOCADO_STATUS_SUCCESS;
+			switch (get_device_type(m_descriptor))
+			{
+				case DeviceType::CPU:
+					status = cpuDestroyConvolutionDescriptor(m_descriptor);
+					break;
+				case DeviceType::CUDA:
+					status = cudaDestroyConvolutionDescriptor(m_descriptor);
+					break;
+				case DeviceType::OPENCL:
+					status = openclDestroyConvolutionDescriptor(m_descriptor);
+					break;
+			}
+			if (status == AVOCADO_STATUS_FREE_FAILED)
+			{
+				std::cout << "free failed\n";
+				exit(-1);
+			}
+		}
+		void ConvolutionDescWrapper::set(ConvMode mode, int nbDims, const std::array<int, 3> &padding, const std::array<int, 3> &strides,
+				const std::array<int, 3> &dilation, int groups, const std::array<uint8_t, 16> &paddingValue)
+		{
+			switch (get_device_type(m_descriptor))
+			{
+				case DeviceType::CPU:
+				{
+					avStatus_t status = cpuSetConvolutionDescriptor(m_descriptor, static_cast<avocado::backend::avConvolutionMode_t>(mode), nbDims,
+							padding.data(), strides.data(), dilation.data(), groups, paddingValue.data());
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					avStatus_t status = cudaSetConvolutionDescriptor(m_descriptor, static_cast<avocado::backend::avConvolutionMode_t>(mode), nbDims,
+							padding.data(), strides.data(), dilation.data(), groups, paddingValue.data());
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					avStatus_t status = openclSetTensorDescriptor(m_descriptor, static_cast<avocado::backend::avConvolutionMode_t>(mode), nbDims,
+//					padding.data(), strides.data(), dilation.data(), groups, paddingValue.data());
+//					CHECK_OPENCL_STATUS(status);
+					break;
+				}
+			}
+		}
+
+		/*
+		 * Convolution descriptor wrapper.
+		 */
+		OptimizerDescWrapper::OptimizerDescWrapper(Device device)
+		{
+			switch (device.type())
+			{
+				case DeviceType::CPU:
+				{
+					avStatus_t status = cpuCreateOptimizerDescriptor(&m_descriptor);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					avStatus_t status = cudaCreateOptimizerDescriptor(&m_descriptor);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+					avStatus_t status = openclCreateOptimizerDescriptor(&m_descriptor);
+					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
+		}
+		OptimizerDescWrapper::OptimizerDescWrapper(OptimizerDescWrapper &&other) :
+				m_descriptor(other.m_descriptor)
+		{
+			other.m_descriptor = AVOCADO_NULL_DESCRIPTOR;
+		}
+		OptimizerDescWrapper& OptimizerDescWrapper::operator=(OptimizerDescWrapper &&other)
+		{
+			std::swap(this->m_descriptor, other.m_descriptor);
+			return *this;
+		}
+		OptimizerDescWrapper::~OptimizerDescWrapper()
+		{
+			avStatus_t status = AVOCADO_STATUS_SUCCESS;
+			switch (get_device_type(m_descriptor))
+			{
+				case DeviceType::CPU:
+					status = cpuDestroyOptimizerDescriptor(m_descriptor);
+					break;
+				case DeviceType::CUDA:
+					status = cudaDestroyOptimizerDescriptor(m_descriptor);
+					break;
+				case DeviceType::OPENCL:
+					status = openclDestroyOptimizerDescriptor(m_descriptor);
+					break;
+			}
+			if (status == AVOCADO_STATUS_FREE_FAILED)
+			{
+				std::cout << "free failed\n";
+				exit(-1);
+			}
+		}
+		void OptimizerDescWrapper::set(OptimizerType type, double learningRate, const std::array<double, 4> &coefficients,
+				const std::array<bool, 4> &flags)
+		{
+			switch (get_device_type(m_descriptor))
+			{
+				case DeviceType::CPU:
+				{
+					avStatus_t status = cpuSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), learningRate,
+							coefficients.data(), flags.data());
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					avStatus_t status = cudaSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), learningRate,
+							coefficients.data(), flags.data());
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					avStatus_t status = openclSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), learningRate,
+//					coefficients.data(), flags.data());
+//					CHECK_OPENCL_STATUS(status);
 					break;
 				}
 			}

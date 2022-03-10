@@ -55,30 +55,16 @@ namespace avocado
 
 	namespace math
 	{
-		float nonlinearityForward(float input, NonlinearityType activation);
-		float nonlinearityBackward(float gradient, float output, NonlinearityType activation);
-		double nonlinearityForward(double input, NonlinearityType activation);
-		double nonlinearityBackward(double gradient, double output, NonlinearityType activation);
+		void activationForwardInPlace(const Context &context, NonlinearityType activation, Tensor &output);
+		void activationBackwardInPlace(const Context &context, NonlinearityType activation, const Tensor &output, Tensor &gradientOut);
 
-		void activationForward(const Context &context, NonlinearityType activation, Scalar alpha1, Scalar alpha2, const Scalar beta,
-				const Tensor &input, Tensor &output);
-		void activationBackward(const Context &context, NonlinearityType activation, Scalar alpha, Scalar beta, Tensor &gradientPrev,
-				const Tensor &gradientNext, const Tensor &output);
+		void activationForward(const Context &context, NonlinearityType activation, Scalar alpha, const Tensor &input, Scalar beta, Tensor &output);
+		void activationBackward(const Context &context, NonlinearityType activation, Scalar alpha, const Tensor &output, const Tensor &gradientOut,
+				Scalar beta, Tensor &gradientIn);
 
-		void softmaxForward(const Context &context, SoftmaxMode mode, Scalar alpha, Scalar beta, const Tensor &input, Tensor &output);
-		void softmaxBackward(const Context &context, SoftmaxMode mode, Scalar alpha, Scalar beta, Tensor &gradientPrev, const Tensor &gradientNext,
-				const Tensor &output);
-
-//		void nonlinearityForwardInPlace(const Context &context, Tensor &output, NonlinearityType activation);
-//		void nonlinearityBackwardInPlace(const Context &context, Tensor &gradient, const Tensor &output, NonlinearityType activation);
-//		void nonlinearityForward(const Context &context, const Tensor &input, Tensor &output, NonlinearityType activation);
-//		void nonlinearityBackward(const Context &context, Tensor &gradient_prev, const Tensor &gradient_next, const Tensor &output,
-//				NonlinearityType activation);
-//
-//		void softmaxForwardInPlace(const Context &context, Tensor &output);
-//		void softmaxBackwardInPlace(const Context &context, Tensor &gradient, const Tensor &output);
-//		void softmaxForward(const Context &context, const Tensor &input, Tensor &output);
-//		void softmaxBackward(const Context &context, Tensor &gradient_prev, const Tensor &gradient_next, const Tensor &output);
+		void softmaxForward(const Context &context, SoftmaxMode mode, Scalar alpha, const Tensor &input, Scalar beta, Tensor &output);
+		void softmaxBackward(const Context &context, SoftmaxMode mode, Scalar alpha, const Tensor &output, const Tensor &gradientOut, Scalar beta,
+				Tensor &gradientIn);
 	}
 
 } /* namespace avocado */

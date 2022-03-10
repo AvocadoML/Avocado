@@ -9,6 +9,7 @@
 #include <Avocado/core/Context.hpp>
 #include <Avocado/core/Tensor.hpp>
 #include <Avocado/core/Scalar.hpp>
+#include <Avocado/backend/backend_libraries.hpp>
 
 namespace avocado
 {
@@ -115,23 +116,234 @@ namespace avocado
 
 	namespace math
 	{
-		void activationForward(const Context &context, NonlinearityType activation, Scalar alpha1, Scalar alpha2, const Scalar beta,
-				const Tensor &input, Tensor &output)
+		void activationForwardInPlace(const Context &context, NonlinearityType activation, Tensor &output)
 		{
+			if (not same_device(context, output))
+				throw DeviceMismatch(METHOD_NAME, "");
+
+			backend::avActivationType_t act = static_cast<backend::avActivationType_t>(activation);
+			backend::avTensorDescriptor_t yDesc = output.getDescriptor();
+			backend::avMemoryDescriptor_t yMem = output.getMemory();
+			switch (context.device().type())
+			{
+				case DeviceType::CPU:
+				{
+					backend::avStatus_t status = backend::cpuActivationForward(context, act, nullptr, yDesc, yMem, nullptr, yDesc, yMem);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					backend::avStatus_t status = backend::cudaActivationForward(context, act, nullptr, yDesc, yMem, nullptr, yDesc, yMem);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					backend::avStatus_t status = backend::openclActivationForward(context, act, nullptr, yDesc, yMem, nullptr, yDesc, yMem);
+//					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
 		}
-		void activationBackward(const Context &context, NonlinearityType activation, Scalar alpha, Scalar beta, Tensor &gradientPrev,
-				const Tensor &gradientNext, const Tensor &output)
+		void activationBackwardInPlace(const Context &context, NonlinearityType activation, const Tensor &output, Tensor &gradientOut)
 		{
+			if (not same_device(context, output, gradientOut))
+				throw DeviceMismatch(METHOD_NAME, "");
+
+			backend::avActivationType_t act = static_cast<backend::avActivationType_t>(activation);
+
+			backend::avTensorDescriptor_t yDesc = output.getDescriptor();
+			backend::avTensorDescriptor_t dyDesc = gradientOut.getDescriptor();
+
+			backend::avMemoryDescriptor_t yMem = output.getMemory();
+			backend::avMemoryDescriptor_t dyMem = gradientOut.getMemory();
+
+			switch (context.device().type())
+			{
+				case DeviceType::CPU:
+				{
+					backend::avStatus_t status = backend::cpuActivationBackward(context, act, nullptr, yDesc, yMem, dyDesc, dyMem, nullptr, dyDesc,
+							dyMem);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					backend::avStatus_t status = backend::cudaActivationBackward(context, act, nullptr, yDesc, yMem, dyDesc, dyMem, nullptr, dyDesc,
+							dyMem);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					backend::avStatus_t status = backend::openclActivationBackward(context, act, nullptr, yDesc, yMem, dyDesc, dyMem, nullptr, dyDesc,
+//							dyMem);
+//					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
 		}
 
-		void softmaxForward(const Context &context, SoftmaxMode mode, Scalar alpha, Scalar beta, const Tensor &input, Tensor &output)
+		void activationForward(const Context &context, NonlinearityType activation, Scalar alpha, const Tensor &input, Scalar beta, Tensor &output)
 		{
+			if (not same_device(context, input, output))
+				throw DeviceMismatch(METHOD_NAME, "");
+
+			alpha.toScalingTypeFor(output.dtype());
+			beta.toScalingTypeFor(output.dtype());
+			backend::avActivationType_t act = static_cast<backend::avActivationType_t>(activation);
+
+			backend::avTensorDescriptor_t xDesc = input.getDescriptor();
+			backend::avTensorDescriptor_t yDesc = output.getDescriptor();
+
+			backend::avMemoryDescriptor_t xMem = input.getMemory();
+			backend::avMemoryDescriptor_t yMem = output.getMemory();
+			switch (context.device().type())
+			{
+				case DeviceType::CPU:
+				{
+					backend::avStatus_t status = backend::cpuActivationForward(context, act, alpha.data(), xDesc, xMem, beta.data(), yDesc, yMem);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					backend::avStatus_t status = backend::cudaActivationForward(context, act, alpha.data(), xDesc, xMem, beta.data(), yDesc, yMem);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					backend::avStatus_t status = backend::openclActivationForward(context, act, alpha.data(), xDesc, xMem, beta.data(), yDesc, yMem);
+//					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
 		}
-		void softmaxBackward(const Context &context, SoftmaxMode mode, Scalar alpha, Scalar beta, Tensor &gradientPrev, const Tensor &gradientNext,
-				const Tensor &output)
+		void activationBackward(const Context &context, NonlinearityType activation, Scalar alpha, const Tensor &output, const Tensor &gradientOut,
+				Scalar beta, Tensor &gradientIn)
 		{
+			if (not same_device(context, output, gradientOut, gradientIn))
+				throw DeviceMismatch(METHOD_NAME, "");
+
+			alpha.toScalingTypeFor(output.dtype());
+			beta.toScalingTypeFor(output.dtype());
+			backend::avActivationType_t act = static_cast<backend::avActivationType_t>(activation);
+
+			backend::avTensorDescriptor_t yDesc = output.getDescriptor();
+			backend::avTensorDescriptor_t dxDesc = gradientIn.getDescriptor();
+			backend::avTensorDescriptor_t dyDesc = gradientOut.getDescriptor();
+
+			backend::avMemoryDescriptor_t yMem = output.getMemory();
+			backend::avMemoryDescriptor_t dxMem = gradientIn.getMemory();
+			backend::avMemoryDescriptor_t dyMem = gradientOut.getMemory();
+
+			switch (context.device().type())
+			{
+				case DeviceType::CPU:
+				{
+					backend::avStatus_t status = backend::cpuActivationBackward(context, act, alpha.data(), yDesc, yMem, dyDesc, dyMem, beta.data(),
+							dxDesc, dxMem);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					backend::avStatus_t status = backend::cudaActivationBackward(context, act, alpha.data(), yDesc, yMem, dyDesc, dyMem, beta.data(),
+							dxDesc, dxMem);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					backend::avStatus_t status = backend::openclActivationBackward(context, act, alpha.data(), yDesc, yMem, dyDesc, dyMem,
+//							beta.data(), dxDesc, dxMem);
+//					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
 		}
 
+		void softmaxForward(const Context &context, SoftmaxMode mode, Scalar alpha, const Tensor &input, Scalar beta, Tensor &output)
+		{
+			if (not same_device(context, input, output))
+				throw DeviceMismatch(METHOD_NAME, "");
+
+			alpha.toScalingTypeFor(output.dtype());
+			beta.toScalingTypeFor(output.dtype());
+			backend::avSoftmaxMode_t _mode = static_cast<backend::avSoftmaxMode_t>(mode);
+
+			backend::avTensorDescriptor_t xDesc = input.getDescriptor();
+			backend::avTensorDescriptor_t yDesc = output.getDescriptor();
+
+			backend::avMemoryDescriptor_t xMem = input.getMemory();
+			backend::avMemoryDescriptor_t yMem = output.getMemory();
+			switch (context.device().type())
+			{
+				case DeviceType::CPU:
+				{
+					backend::avStatus_t status = backend::cpuSoftmaxForward(context, _mode, alpha.data(), xDesc, xMem, beta.data(), yDesc, yMem);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					backend::avStatus_t status = backend::cudaSoftmaxForward(context, _mode, alpha.data(), xDesc, xMem, beta.data(), yDesc, yMem);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					backend::avStatus_t status = backend::openclSoftmaxForward(context, _mode, alpha.data(), xDesc, xMem, beta.data(), yDesc, yMem);
+//					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
+		}
+		void softmaxBackward(const Context &context, SoftmaxMode mode, Scalar alpha, const Tensor &output, const Tensor &gradientOut, Scalar beta,
+				Tensor &gradientIn)
+		{
+			if (not same_device(context, output, gradientOut, gradientIn))
+				throw DeviceMismatch(METHOD_NAME, "");
+
+			alpha.toScalingTypeFor(output.dtype());
+			beta.toScalingTypeFor(output.dtype());
+			backend::avSoftmaxMode_t _mode = static_cast<backend::avSoftmaxMode_t>(mode);
+
+			backend::avTensorDescriptor_t yDesc = output.getDescriptor();
+			backend::avTensorDescriptor_t dxDesc = gradientIn.getDescriptor();
+			backend::avTensorDescriptor_t dyDesc = gradientOut.getDescriptor();
+
+			backend::avMemoryDescriptor_t yMem = output.getMemory();
+			backend::avMemoryDescriptor_t dxMem = gradientIn.getMemory();
+			backend::avMemoryDescriptor_t dyMem = gradientOut.getMemory();
+
+			switch (context.device().type())
+			{
+				case DeviceType::CPU:
+				{
+					backend::avStatus_t status = backend::cpuSoftmaxBackward(context, _mode, alpha.data(), yDesc, yMem, dyDesc, dyMem, beta.data(),
+							dxDesc, dxMem);
+					CHECK_CPU_STATUS(status)
+					break;
+				}
+				case DeviceType::CUDA:
+				{
+					backend::avStatus_t status = backend::cudaSoftmaxBackward(context, _mode, alpha.data(), yDesc, yMem, dyDesc, dyMem, beta.data(),
+							dxDesc, dxMem);
+					CHECK_CUDA_STATUS(status)
+					break;
+				}
+				case DeviceType::OPENCL:
+				{
+//					backend::avStatus_t status = backend::openclSoftmaxBackward(context, _mode, alpha.data(), yDesc, yMem, dyDesc, dyMem, beta.data(),
+//							dxDesc, dxMem);
+//					CHECK_OPENCL_STATUS(status)
+					break;
+				}
+			}
+		}
 	} /* namespace math */
 } /* namespace avocado */
 
