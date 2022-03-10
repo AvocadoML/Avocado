@@ -10,6 +10,7 @@
 
 #include <Avocado/optimizers/Optimizer.hpp>
 #include <Avocado/core/Tensor.hpp>
+#include <Avocado/math/training.hpp>
 
 #include <memory>
 
@@ -18,25 +19,18 @@ namespace avocado
 	class ADAM: public Optimizer
 	{
 		private:
-			std::unique_ptr<Tensor> m_momentum;
-			std::unique_ptr<Tensor> m_variance;
-
-			float m_learning_rate = 0.001f;
-			float m_beta1 = 0.9f;
-			float m_beta2 = 0.999f;
-			int m_steps = 0;
-
-			bool m_use_amsgrad = false;
+			std::unique_ptr<Tensor> m_workspace;
+			OptimizerConfig m_config;
 
 		public:
 			ADAM() = default;
-			ADAM(float learningRate, bool useAMSGrad = false);
+			ADAM(double learningRate, bool useAMSGrad = false);
 
-			ADAM& setBeta1(float b);
-			ADAM& setBeta2(float b);
+			ADAM& setBeta1(double beta1);
+			ADAM& setBeta2(double beta2);
 
 			float getLearningRate() const noexcept;
-			void setLearningRate(float lr) noexcept;
+			void setLearningRate(double learningRate) noexcept;
 			int getSteps() const noexcept;
 
 			void restart() noexcept;

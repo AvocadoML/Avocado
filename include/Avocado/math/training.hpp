@@ -42,49 +42,31 @@ namespace avocado
 	{
 		private:
 			avocado::internal::OptimizerDescWrapper m_descriptor;
-			OptimizerType m_type;
-			double m_learning_rate;
-			std::array<double, 4> m_coeficients;
-			std::array<bool, 4> m_flags;
+			OptimizerType m_type = static_cast<OptimizerType>(-1);
+			int64_t m_steps = 0;
+			double m_learning_rate = 0.0;
+			std::array<double, 4> m_coeficients = { 0.0, 0.0, 0.0, 0.0 };
+			std::array<bool, 4> m_flags = { false, false, false, false };
 		public:
+			OptimizerConfig() = default;
+			OptimizerConfig(Device device);
+			OptimizerConfig(const OptimizerConfig &other);
+			OptimizerConfig(OptimizerConfig &&other) = default;
+			OptimizerConfig& operator=(const OptimizerConfig &other);
+			OptimizerConfig& operator=(OptimizerConfig &&other) = default;
 
-			void setType(OptimizerType type)
-			{
-				m_type = type;
-				m_descriptor.set(m_type, m_learning_rate, m_coeficients, m_flags);
-			}
-			void setLearningRate(double learningRate)
-			{
-				m_learning_rate = learningRate;
-				m_descriptor.set(m_type, m_learning_rate, m_coeficients, m_flags);
-			}
-			void setCoefficients(const std::array<double, 4> &coefficients)
-			{
-				m_coeficients = coefficients;
-				m_descriptor.set(m_type, m_learning_rate, m_coeficients, m_flags);
-			}
-			void setFlags(const std::array<bool, 4> &flags)
-			{
-				m_flags = flags;
-				m_descriptor.set(m_type, m_learning_rate, m_coeficients, m_flags);
-			}
-
-			OptimizerType getType() const noexcept
-			{
-				return m_type;
-			}
-			double getLearningRate() const noexcept
-			{
-				return m_learning_rate;
-			}
-			const std::array<double, 4>& getCoefficients() const noexcept
-			{
-				return m_coeficients;
-			}
-			const std::array<bool, 4>& getFlags() const noexcept
-			{
-				return m_flags;
-			}
+			Device device() const noexcept;
+			void moveTo(Device newDevice);
+			void setType(OptimizerType type);
+			void setSteps(int64_t steps);
+			void setLearningRate(double learningRate);
+			void setCoefficients(const std::array<double, 4> &coefficients);
+			void setFlags(const std::array<bool, 4> &flags);
+			OptimizerType getType() const noexcept;
+			double getLearningRate() const noexcept;
+			int64_t getSteps() const noexcept;
+			const std::array<double, 4>& getCoefficients() const noexcept;
+			const std::array<bool, 4>& getFlags() const noexcept;
 			operator backend::avOptimizerDescriptor_t() const noexcept
 			{
 				return static_cast<backend::avOptimizerDescriptor_t>(m_descriptor);
@@ -100,8 +82,8 @@ namespace avocado
 		void calcLossGradient(const Context &context, LossType lossType, Scalar alpha, Scalar beta, Tensor &gradient, const Tensor &output,
 				const Tensor &target, bool isFused);
 
-		void calcOptimizerLearn(const Context &context, const OptimizerConfig &config, Scalar alpha, Scalar beta, Tensor &weight,
-				const Tensor &update, Tensor &workspace);
+		void optimizerLearn(const Context &context, OptimizerConfig &config, Scalar alpha, Scalar beta, Tensor &weight, const Tensor &update,
+				Tensor &workspace);
 
 		Scalar applyRegularizerL2(const Context &context, Tensor &gradient, const Tensor &weight, Tensor &update, Scalar scale, Scalar offset,
 				bool calcLoss);

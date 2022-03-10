@@ -17,10 +17,23 @@
 namespace
 {
 	using namespace avocado;
-	DeviceType get_device_type(backend::av_int64 desc) noexcept
+	Device get_device(backend::av_int64 desc)
 	{
 		const backend::av_int64 device_type_mask = 0xFF00000000000000ull;
-		return static_cast<DeviceType>((desc & device_type_mask) >> 56ull);
+		const backend::av_int64 device_index_mask = 0x0000FFFF00000000ull;
+		DeviceType type = static_cast<DeviceType>((desc & device_type_mask) >> 56ull);
+		int index = static_cast<int>((desc & device_index_mask) >> 32ull);
+		switch (type)
+		{
+			case DeviceType::CPU:
+				return Device::cpu();
+			case DeviceType::CUDA:
+				return Device::cuda(index);
+			case DeviceType::OPENCL:
+				return Device::opencl(index);
+			default:
+				throw LogicError(METHOD_NAME, "invalid descriptor");
+		}
 	}
 }
 
@@ -59,7 +72,7 @@ namespace avocado
 		}
 		MemoryDescWrapper::MemoryDescWrapper(const MemoryDescWrapper &desc, size_t sizeInBytes, size_t offsetInBytes)
 		{
-			switch (get_device_type(desc.m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 				{
@@ -94,7 +107,7 @@ namespace avocado
 		MemoryDescWrapper::~MemoryDescWrapper()
 		{
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 					status = cpuDestroyMemoryDescriptor(m_descriptor);
@@ -111,6 +124,10 @@ namespace avocado
 				std::cout << "free failed\n";
 				exit(-1);
 			}
+		}
+		Device MemoryDescWrapper::device() const noexcept
+		{
+			return get_device(m_descriptor);
 		}
 
 		/*
@@ -153,7 +170,7 @@ namespace avocado
 		TensorDescWrapper::~TensorDescWrapper()
 		{
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 					status = cpuDestroyTensorDescriptor(m_descriptor);
@@ -171,9 +188,13 @@ namespace avocado
 				exit(-1);
 			}
 		}
+		Device TensorDescWrapper::device() const noexcept
+		{
+			return get_device(m_descriptor);
+		}
 		void TensorDescWrapper::set(const Shape &shape, DataType dtype)
 		{
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 				{
@@ -236,7 +257,7 @@ namespace avocado
 		ConvolutionDescWrapper::~ConvolutionDescWrapper()
 		{
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 					status = cpuDestroyConvolutionDescriptor(m_descriptor);
@@ -254,10 +275,14 @@ namespace avocado
 				exit(-1);
 			}
 		}
+		Device ConvolutionDescWrapper::device() const noexcept
+		{
+			return get_device(m_descriptor);
+		}
 		void ConvolutionDescWrapper::set(ConvMode mode, int nbDims, const std::array<int, 3> &padding, const std::array<int, 3> &strides,
 				const std::array<int, 3> &dilation, int groups, const std::array<uint8_t, 16> &paddingValue)
 		{
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 				{
@@ -323,7 +348,7 @@ namespace avocado
 		OptimizerDescWrapper::~OptimizerDescWrapper()
 		{
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 					status = cpuDestroyOptimizerDescriptor(m_descriptor);
@@ -341,22 +366,26 @@ namespace avocado
 				exit(-1);
 			}
 		}
-		void OptimizerDescWrapper::set(OptimizerType type, double learningRate, const std::array<double, 4> &coefficients,
+		Device OptimizerDescWrapper::device() const noexcept
+		{
+			return get_device(m_descriptor);
+		}
+		void OptimizerDescWrapper::set(OptimizerType type, int64_t steps, double learningRate, const std::array<double, 4> &coefficients,
 				const std::array<bool, 4> &flags)
 		{
-			switch (get_device_type(m_descriptor))
+			switch (device().type())
 			{
 				case DeviceType::CPU:
 				{
-					avStatus_t status = cpuSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), learningRate,
-							coefficients.data(), flags.data());
+					avStatus_t status = cpuSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), steps,
+							learningRate, coefficients.data(), flags.data());
 					CHECK_CPU_STATUS(status)
 					break;
 				}
 				case DeviceType::CUDA:
 				{
-					avStatus_t status = cudaSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), learningRate,
-							coefficients.data(), flags.data());
+					avStatus_t status = cudaSetOptimizerDescriptor(m_descriptor, static_cast<avocado::backend::avOptimizerType_t>(type), steps,
+							learningRate, coefficients.data(), flags.data());
 					CHECK_CUDA_STATUS(status)
 					break;
 				}
@@ -373,7 +402,7 @@ namespace avocado
 		void set_memory(avContextDescriptor_t context, avMemoryDescriptor_t mem, size_t dstOffset, size_t count, const void *pattern,
 				size_t patternSizeInBytes)
 		{
-			switch (get_device_type(mem))
+			switch (get_device(mem).type())
 			{
 				case DeviceType::CPU:
 				{
@@ -400,11 +429,11 @@ namespace avocado
 		{
 			if (count == 0)
 				return;
-			switch (get_device_type(srcMem))
+			switch (get_device(srcMem).type())
 			{
 				case DeviceType::CPU: // source device is CPU
 				{
-					switch (get_device_type(dstMem))
+					switch (get_device(dstMem).type())
 					{
 						case DeviceType::CPU: // from CPU to CPU
 						{
@@ -431,7 +460,7 @@ namespace avocado
 				}
 				case DeviceType::CUDA: // source device is CUDA
 				{
-					switch (get_device_type(dstMem))
+					switch (get_device(dstMem).type())
 					{
 						case DeviceType::CPU: // from CUDA to CPU
 						{
@@ -461,7 +490,7 @@ namespace avocado
 				}
 				case DeviceType::OPENCL: // source device is OPENCL
 				{
-					switch (get_device_type(dstMem))
+					switch (get_device(dstMem).type())
 					{
 						case DeviceType::CPU: // from OPENCL to CPU
 						{
@@ -494,7 +523,7 @@ namespace avocado
 		void change_type(avContextDescriptor_t context, avMemoryDescriptor_t dstMem, DataType dstType, const avMemoryDescriptor_t srcMem,
 				DataType srcType, size_t elements)
 		{
-			switch (get_device_type(dstMem))
+			switch (get_device(dstMem).type())
 			{
 				case DeviceType::CPU:
 				{

@@ -1322,10 +1322,10 @@ namespace avocado
 				dtype(dtype)
 		{
 		}
-		void OptimizerTester::set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients,
+		void OptimizerTester::set(avOptimizerType_t type, int64_t steps, double learningRate, const std::array<double, 4> &coefficients,
 				const std::array<bool, 4> &flags)
 		{
-			optimizer.set(type, learningRate, coefficients, flags);
+			optimizer.set(type, steps, learningRate, coefficients, flags);
 		}
 		double OptimizerTester::getDifference(const void *alpha, const void *beta) noexcept
 		{

@@ -35,7 +35,7 @@ namespace avocado
 			virtual ~Optimizer() = default;
 
 			virtual float getLearningRate() const noexcept = 0;
-			virtual void setLearningRate(float lr) noexcept = 0;
+			virtual void setLearningRate(double learningRate) noexcept = 0;
 			virtual int getSteps() const noexcept = 0;
 
 			virtual void restart() noexcept = 0;

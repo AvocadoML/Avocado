@@ -286,6 +286,7 @@ namespace avocado
 					static constexpr av_int64 descriptor_type = 6;
 
 					avOptimizerType_t type = AVOCADO_OPTIMIZER_SGD;
+					int64_t steps = 0;
 					double learning_rate = 0.0;
 					std::array<double, 4> coef;
 					std::array<bool, 4> flags;
@@ -295,8 +296,8 @@ namespace avocado
 					void destroy();
 					static std::string className();
 
-					void set(avOptimizerType_t optimizerType, double learningRate, const double coefficients[], const bool flags[]);
-					void get(avOptimizerType_t *optimizerType, double *learningRate, double coefficients[], bool flags[]);
+					void set(avOptimizerType_t optimizerType, av_int64 steps, double learningRate, const double coefficients[], const bool flags[]);
+					void get(avOptimizerType_t *optimizerType, av_int64 *steps, double *learningRate, double coefficients[], bool flags[]);
 					void get_workspace_size(av_int64 *result, const TensorDescriptor &wDesc) const;
 			};
 

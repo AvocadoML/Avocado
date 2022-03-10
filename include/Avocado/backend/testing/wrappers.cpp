@@ -380,17 +380,17 @@ namespace avocado
 			if (m_ref_desc != AVOCADO_NULL_DESCRIPTOR)
 				refDestroyOptimizerDescriptor(m_ref_desc);
 		}
-		void OptimizerWrapper::set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients,
+		void OptimizerWrapper::set(avOptimizerType_t type, int64_t steps, double learningRate, const std::array<double, 4> &coefficients,
 				const std::array<bool, 4> &flags)
 		{
 #if USE_CPU
-			cpuSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+			cpuSetOptimizerDescriptor(m_desc, type, steps, learningRate, coefficients.data(), flags.data());
 #elif USE_CUDA
-			cudaSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+			cudaSetOptimizerDescriptor(m_desc, type, steps, learningRate, coefficients.data(), flags.data());
 #elif USE_OPENCL
-			openclSetOptimizerDescriptor(m_desc, type, learningRate, coefficients.data(), flags.data());
+			openclSetOptimizerDescriptor(m_desc, type, steps, learningRate, coefficients.data(), flags.data());
 #endif
-			refSetOptimizerDescriptor(m_ref_desc, type, learningRate, coefficients.data(), flags.data());
+			refSetOptimizerDescriptor(m_ref_desc, type, steps, learningRate, coefficients.data(), flags.data());
 		}
 		size_t OptimizerWrapper::getWorkspaceSize(const TensorWrapper &weights)
 		{

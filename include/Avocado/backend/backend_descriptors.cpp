@@ -66,8 +66,8 @@ namespace avocado
 		namespace opencl
 		{
 #else
-				namespace reference
-				{
+		namespace reference
+		{
 #endif
 
 			int get_number_of_devices()
@@ -270,9 +270,9 @@ namespace avocado
 			void MemoryDescriptor::create(av_int64 sizeInBytes)
 			{
 				if (sizeInBytes > 0)
-				m_data = new int8_t[sizeInBytes];
+					m_data = new int8_t[sizeInBytes];
 				else
-				m_data = nullptr;
+					m_data = nullptr;
 				m_device_index = 0;
 				m_offset = 0;
 				m_size = sizeInBytes;
@@ -311,7 +311,7 @@ namespace avocado
 #elif USE_OPENCL
 #else
 				if (m_is_owning)
-				delete[] m_data;
+					delete[] m_data;
 				m_data = nullptr;
 #endif
 				m_device_index = AVOCADO_INVALID_DEVICE_INDEX;
@@ -448,7 +448,7 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 					m_workspace.create(m_device_index, m_workspace_size); // lazy allocation of 8MB workspace
 #else
-							m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
+					m_workspace.create(m_workspace_size); // lazy allocation of 8MB workspace
 #endif
 				}
 				return m_workspace;
@@ -802,7 +802,8 @@ namespace avocado
 			{
 				return "OptimizerDescriptor";
 			}
-			void OptimizerDescriptor::set(avOptimizerType_t optimizerType, double learningRate, const double coefficients[], const bool flags[])
+			void OptimizerDescriptor::set(avOptimizerType_t optimizerType, av_int64 steps, double learningRate, const double coefficients[],
+					const bool flags[])
 			{
 				if (coefficients == nullptr)
 					throw std::invalid_argument("");
@@ -810,14 +811,18 @@ namespace avocado
 					throw std::invalid_argument("");
 
 				this->type = optimizerType;
+				this->steps = steps;
 				this->learning_rate = learningRate;
 				std::memcpy(this->coef.data(), coefficients, sizeof(this->coef));
 				std::memcpy(this->flags.data(), flags, sizeof(this->flags));
 			}
-			void OptimizerDescriptor::get(avOptimizerType_t *optimizerType, double *learningRate, double coefficients[], bool flags[])
+			void OptimizerDescriptor::get(avOptimizerType_t *optimizerType, av_int64 *steps, double *learningRate, double coefficients[],
+					bool flags[])
 			{
 				if (optimizerType != nullptr)
 					optimizerType[0] = this->type;
+				if (steps != nullptr)
+					steps[0] = this->steps;
 				if (learningRate != nullptr)
 					learningRate[0] = this->learning_rate;
 				if (coefficients != nullptr)
@@ -884,7 +889,7 @@ namespace avocado
 #if USE_CUDA or USE_OPENCL
 						tmp.create(i, true);
 #else
-						tmp.create();
+				tmp.create();
 #endif
 				return tmp;
 			} catch (std::exception &e)

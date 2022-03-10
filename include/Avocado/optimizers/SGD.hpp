@@ -10,6 +10,7 @@
 
 #include <Avocado/optimizers/Optimizer.hpp>
 #include <Avocado/core/Tensor.hpp>
+#include <Avocado/math/training.hpp>
 
 #include <memory>
 
@@ -18,14 +19,8 @@ namespace avocado
 	class SGD: public Optimizer
 	{
 		private:
-			std::unique_ptr<Tensor> m_momentum;
-
-			float m_learning_rate = 0.01f;
-			float m_beta = 0.0f;
-			int m_steps = 0;
-
-			bool m_use_nesterov = false;
-
+			std::unique_ptr<Tensor> m_workspace;
+			OptimizerConfig m_config;
 		public:
 			SGD() = default;
 			/**
@@ -34,10 +29,10 @@ namespace avocado
 			 * @param momentum
 			 * @param nesterov
 			 */
-			SGD(float learningRate, float momentum = 0.0f, bool useNesterov = false);
+			SGD(double learningRate, double beta = 0.0, bool useNesterov = false);
 
 			float getLearningRate() const noexcept;
-			void setLearningRate(float lr) noexcept;
+			void setLearningRate(double lr) noexcept;
 			int getSteps() const noexcept;
 
 			void restart() noexcept;

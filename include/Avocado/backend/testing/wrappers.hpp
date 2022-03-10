@@ -152,7 +152,7 @@ namespace avocado
 			{
 				return m_ref_desc;
 			}
-			void set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
+			void set(avOptimizerType_t type, int64_t steps, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
 			size_t getWorkspaceSize(const TensorWrapper &weights);
 		};
 

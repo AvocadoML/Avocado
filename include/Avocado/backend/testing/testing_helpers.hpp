@@ -221,7 +221,7 @@ namespace avocado
 				avDataType_t dtype;
 			public:
 				OptimizerTester(std::vector<int> shape, avDataType_t dtype);
-				void set(avOptimizerType_t type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
+				void set(avOptimizerType_t type, int64_t steps, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
 				double getDifference(const void *alpha, const void *beta) noexcept;
 		};
 

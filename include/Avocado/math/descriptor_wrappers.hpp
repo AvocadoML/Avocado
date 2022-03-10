@@ -9,6 +9,7 @@
 #define AVOCADO_MATH_DESCRIPTOR_WRAPPERS_HPP_
 
 #include <Avocado/backend/backend_defs.h>
+#include <Avocado/core/Device.hpp>
 #include <cstdint>
 #include <cstddef>
 #include <array>
@@ -17,12 +18,9 @@ namespace avocado
 {
 	class Device;
 	class Shape;
-	enum class DataType
-	;
-	enum class ConvMode
-	;
-	enum class OptimizerType
-	;
+	enum class DataType;
+	enum class ConvMode;
+	enum class OptimizerType;
 }
 
 namespace avocado
@@ -41,6 +39,7 @@ namespace avocado
 				MemoryDescWrapper& operator=(const MemoryDescWrapper &other) = delete;
 				MemoryDescWrapper& operator=(MemoryDescWrapper &&other);
 				~MemoryDescWrapper();
+				Device device() const noexcept;
 				operator backend::avMemoryDescriptor_t() const noexcept
 				{
 					return m_descriptor;
@@ -51,13 +50,13 @@ namespace avocado
 		{
 				backend::avTensorDescriptor_t m_descriptor = backend::AVOCADO_NULL_DESCRIPTOR;
 			public:
-				TensorDescWrapper() = default;
-				TensorDescWrapper(Device device);
+				TensorDescWrapper(Device device = Device::cpu());
 				TensorDescWrapper(const TensorDescWrapper &other) = delete;
 				TensorDescWrapper(TensorDescWrapper &&other);
 				TensorDescWrapper& operator=(const TensorDescWrapper &other) = delete;
 				TensorDescWrapper& operator=(TensorDescWrapper &&other);
 				~TensorDescWrapper();
+				Device device() const noexcept;
 				void set(const Shape &shape, DataType dtype);
 				operator backend::avTensorDescriptor_t() const noexcept
 				{
@@ -69,13 +68,13 @@ namespace avocado
 		{
 				backend::avConvolutionDescriptor_t m_descriptor = backend::AVOCADO_NULL_DESCRIPTOR;
 			public:
-				ConvolutionDescWrapper() = default;
-				ConvolutionDescWrapper(Device device);
+				ConvolutionDescWrapper(Device device = Device::cpu());
 				ConvolutionDescWrapper(const ConvolutionDescWrapper &other) = delete;
 				ConvolutionDescWrapper(ConvolutionDescWrapper &&other);
 				ConvolutionDescWrapper& operator=(const ConvolutionDescWrapper &other) = delete;
 				ConvolutionDescWrapper& operator=(ConvolutionDescWrapper &&other);
 				~ConvolutionDescWrapper();
+				Device device() const noexcept;
 				void set(ConvMode mode, int nbDims, const std::array<int, 3> &padding, const std::array<int, 3> &strides,
 						const std::array<int, 3> &dilation, int groups, const std::array<uint8_t, 16> &paddingValue);
 				operator backend::avConvolutionDescriptor_t() const noexcept
@@ -88,14 +87,15 @@ namespace avocado
 		{
 				backend::avOptimizerDescriptor_t m_descriptor = backend::AVOCADO_NULL_DESCRIPTOR;
 			public:
-				OptimizerDescWrapper() = default;
-				OptimizerDescWrapper(Device device);
+				OptimizerDescWrapper(Device device = Device::cpu());
 				OptimizerDescWrapper(const OptimizerDescWrapper &other) = delete;
 				OptimizerDescWrapper(OptimizerDescWrapper &&other);
-				OptimizerDescWrapper& operator=(const OptimizerDescWrapper &other) = delete;
+				OptimizerDescWrapper& operator=(const OptimizerDescWrapper &other);
 				OptimizerDescWrapper& operator=(OptimizerDescWrapper &&other);
 				~OptimizerDescWrapper();
-				void set(OptimizerType type, double learningRate, const std::array<double, 4> &coefficients, const std::array<bool, 4> &flags);
+				Device device() const noexcept;
+				void set(OptimizerType type, int64_t steps, double learningRate, const std::array<double, 4> &coefficients,
+						const std::array<bool, 4> &flags);
 				operator backend::avOptimizerDescriptor_t() const noexcept
 				{
 					return m_descriptor;
