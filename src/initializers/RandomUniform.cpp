@@ -17,7 +17,7 @@ namespace avocado
 {
 	static_block
 	{
-//		registerInitializer(RandomUniform());
+		registerInitializer(RandomUniform());
 	}
 
 	RandomUniform::RandomUniform(float min_value, float max_value) :
@@ -32,7 +32,7 @@ namespace avocado
 		std::unique_ptr<float[]> tmp = std::make_unique<float[]>(volume);
 		for (size_t i = 0; i < volume; i++)
 			tmp[i] = m_min + (m_max - m_min) * math::randFloat();
-//		param.getParam().copyFrom(tmp.get(), param.shape().volume());
+		param.getParam().copyFromHost(tmp.get(), param.shape().volume());
 	}
 
 	std::string RandomUniform::name() const
