@@ -17,7 +17,7 @@ namespace avocado
 	class Context
 	{
 		private:
-			backend::avContextDescriptor_t m_data = backend::AVOCADO_INVALID_DESCRIPTOR;
+			backend::avContextDescriptor_t m_data = backend::AVOCADO_NULL_DESCRIPTOR;
 			Device m_device;
 		public:
 			Context(Device device = Device::cpu());

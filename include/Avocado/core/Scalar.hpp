@@ -14,6 +14,7 @@
 #include <Avocado/backend/backend_defs.h>
 
 #include <string>
+#include <array>
 #include <cstring>
 
 namespace avocado
@@ -21,11 +22,12 @@ namespace avocado
 	class Scalar
 	{
 		private:
-			uint8_t m_data[16];
+			std::array<uint8_t, 16> m_data;
 			DataType m_dtype = DataType::UNKNOWN;
 		public:
 
 			Scalar() = default;
+			Scalar(DataType dtype, const std::array<uint8_t, 16> &rawBytes);
 			Scalar(DataType dtype);
 			template<typename T>
 			Scalar(T value) :
@@ -35,7 +37,7 @@ namespace avocado
 				if (m_dtype == DataType::UNKNOWN)
 					throw DataTypeNotSupported( METHOD_NAME, "unknown data type");
 
-				std::memcpy(m_data, &value, sizeof(T));
+				std::memcpy(m_data.data(), &value, sizeof(T));
 			}
 			template<typename T>
 			Scalar& operator=(const T &value)
@@ -45,7 +47,7 @@ namespace avocado
 					throw DataTypeNotSupported( METHOD_NAME, "unknown data type");
 
 				m_dtype = typeOf<T>();
-				std::memcpy(m_data, &value, sizeof(T));
+				std::memcpy(m_data.data(), &value, sizeof(T));
 				return *this;
 			}
 
@@ -62,11 +64,17 @@ namespace avocado
 				if (typeOf<T>() == DataType::UNKNOWN)
 					throw DataTypeNotSupported( METHOD_NAME, "unknown data type");
 				T result;
-				math::changeType(&result, typeOf<T>(), m_data, m_dtype, 1);
+				if (typeOf<T>() == m_dtype)
+					std::memcpy(&result, m_data.data(), sizeof(T));
+				else
+					math::changeType(&result, typeOf<T>(), m_data.data(), m_dtype, 1);
 				return result;
 			}
 			Scalar asType(DataType newType) const;
+			void toScalingTypeFor(DataType type);
 
+			static Scalar zero(DataType dtype);
+			static Scalar one(DataType dtype);
 	};
 
 	std::ostream& operator<<(std::ostream &stream, const Scalar &s);

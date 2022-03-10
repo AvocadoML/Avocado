@@ -18,11 +18,6 @@
 
 namespace avocado
 {
-	namespace internal
-	{
-
-	}
-
 	Tensor::Tensor(const Shape &shape, DataType dtype, Device device) :
 			m_shape(shape),
 			m_dtype(dtype),
@@ -250,11 +245,11 @@ namespace avocado
 			throw DataTypeMismatch(METHOD_NAME, this->dtype(), value.dtype());
 		internal::set_memory(get_default_context(m_device), m_memory_descriptor, 0, sizeInBytes(), value.data(), value.sizeInBytes());
 	}
-	void Tensor::copyTo(void *dst, size_t elements) const
+	void Tensor::copyToHost(void *dst, size_t elements) const
 	{
 		copy_data_to_cpu(dst, 0, sizeOf(dtype()) * elements);
 	}
-	void Tensor::copyFrom(const void *src, size_t elements)
+	void Tensor::copyFromHost(const void *src, size_t elements)
 	{
 		copy_data_from_cpu(0, src, sizeOf(dtype()) * elements);
 	}
@@ -375,7 +370,7 @@ namespace avocado
 			else
 			{
 				std::unique_ptr<int8_t[]> buffer_on_cpu = std::make_unique<int8_t[]>(sizeInBytes());
-				copyTo(buffer_on_cpu.get(), sizeInBytes());
+				copyToHost(buffer_on_cpu.get(), sizeInBytes());
 				binary_data.save(buffer_on_cpu.get(), sizeInBytes());
 			}
 		}
@@ -397,7 +392,7 @@ namespace avocado
 			{
 				std::unique_ptr<int8_t[]> buffer_on_cpu = std::make_unique<int8_t[]>(sizeInBytes());
 				binary_data.load(buffer_on_cpu.get(), static_cast<size_t>(json["binary_offset"]), sizeInBytes());
-				copyFrom(buffer_on_cpu.get(), sizeInBytes());
+				copyFromHost(buffer_on_cpu.get(), sizeInBytes());
 			}
 		}
 	}

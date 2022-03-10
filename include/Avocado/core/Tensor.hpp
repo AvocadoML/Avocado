@@ -80,8 +80,8 @@ namespace avocado
 			void convertTo(DataType newType);
 			void zeroall();
 			void setall(const Scalar &value);
-			void copyTo(void *dst, size_t elements) const;
-			void copyFrom(const void *src, size_t elements);
+			void copyToHost(void *dst, size_t elements) const;
+			void copyFromHost(const void *src, size_t elements);
 			void copyFrom(const Tensor &other);
 			void copyFrom(const Tensor &other, size_t elements);
 
@@ -97,6 +97,8 @@ namespace avocado
 			template<typename T>
 			T get(std::initializer_list<int> idx) const
 			{
+				if (dtype() != typeOf<T>())
+					throw DataTypeMismatch(METHOD_NAME, dtype(), typeOf<T>());
 				T result = 0;
 				copy_data_to_cpu(&result, sizeOf(dtype()) * get_index(idx.begin(), idx.size()), sizeof(T));
 				return result;
@@ -104,6 +106,8 @@ namespace avocado
 			template<typename T>
 			void set(T value, std::initializer_list<int> idx)
 			{
+				if (dtype() != typeOf<T>())
+					throw DataTypeMismatch(METHOD_NAME, dtype(), typeOf<T>());
 				copy_data_from_cpu(sizeOf(dtype()) * get_index(idx.begin(), idx.size()), &value, sizeof(T));
 			}
 
@@ -123,7 +127,7 @@ namespace avocado
 	Tensor toTensor(std::initializer_list<T> data)
 	{
 		Tensor result( { static_cast<int>(data.size()) }, typeOf<T>(), Device::cpu());
-		result.copyFrom(data.begin(), data.size());
+		result.copyFromHost(data.begin(), data.size());
 		return result;
 	}
 	template<typename T>
@@ -138,14 +142,14 @@ namespace avocado
 		}
 
 		Tensor result(shape, typeOf<T>(), Device::cpu());
-		result.copyFrom(tmp.get(), result.volume());
+		result.copyFromHost(tmp.get(), result.volume());
 		return result;
 	}
 	template<typename T>
 	std::unique_ptr<T[]> toArray(const Tensor &t)
 	{
 		std::unique_ptr<T[]> result = std::make_unique<T[]>(t.volume());
-		t.copyTo(result.get(), t.volume());
+		t.copyToHost(result.get(), t.volume());
 		return result;
 	}
 	template<typename T>

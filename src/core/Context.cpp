@@ -43,7 +43,7 @@ namespace avocado
 			m_data(other.m_data),
 			m_device(other.m_device)
 	{
-		other.m_data = backend::AVOCADO_INVALID_DESCRIPTOR;
+		other.m_data = backend::AVOCADO_NULL_DESCRIPTOR;
 	}
 	Context& Context::operator=(Context &&other)
 	{
@@ -121,7 +121,7 @@ namespace avocado
 			case DeviceType::OPENCL:
 				return backend::openclGetDefaultContext(device.index());
 			default:
-				return backend::AVOCADO_INVALID_DESCRIPTOR;
+				return backend::AVOCADO_NULL_DESCRIPTOR;
 		}
 	}
 
