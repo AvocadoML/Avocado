@@ -15,7 +15,7 @@ namespace avocado
 {
 	static_block
 	{
-//		registerLossFunction(MeanSquareLoss());
+		registerLossFunction(MeanSquareLoss());
 	}
 
 	Scalar MeanSquareLoss::getLoss(const Context &context, const Tensor &output, const Tensor &target) const

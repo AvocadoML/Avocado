@@ -15,12 +15,14 @@ namespace avocado
 {
 	static_block
 	{
-//		registerLossFunction(CrossEntropyLoss());
+		registerLossFunction(CrossEntropyLoss());
 	}
 
 	bool CrossEntropyLoss::tryCombineWith(const Layer &layer) noexcept
 	{
-		if (layer.name() == "Softmax" or layer.name() == "Activation")
+		if (layer.name() == "Softmax")
+			m_is_combined_with_layer = true;
+		if (layer.name() == "Activation" and layer.getNonlinearity() == NonlinearityType::SIGMOID)
 			m_is_combined_with_layer = true;
 		return m_is_combined_with_layer;
 	}
