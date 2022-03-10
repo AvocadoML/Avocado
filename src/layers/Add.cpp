@@ -53,24 +53,23 @@ namespace avocado
 		return new Add(config["nonlinearity"]);
 	}
 
-	void Add::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
+	void Add::forward(const std::vector<Tensor> &input, Tensor &output)
 	{
 		assert(input.size() == m_input_shapes.size());
 
-		math::tensorBinaryOp(context(), TensorBinaryOp::ADD, alpha, input[0], alpha, input[1], beta, output);
+		math::tensorBinaryOp(context(), TensorBinaryOp::ADD, 1, input[0], 1, input[1], 0, output);
 		for (size_t i = 2; i < input.size(); i++)
-			math::addTensors(context(), output, input[i], alpha, 1);
+			math::addTensors(context(), output, input[i], 1, 1);
 		math::activationForwardInPlace(context(), m_nonlinearity, output);
 	}
-	void Add::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
-			Scalar beta)
+	void Add::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta)
 	{
 		assert(input.size() == m_input_shapes.size());
 		assert(gradientIn.size() == m_input_shapes.size());
 
 		math::activationBackwardInPlace(context(), m_nonlinearity, output, gradientOut);
 		for (size_t i = 0; i < gradientIn.size(); i++)
-			math::addTensors(context(), gradientIn[i], gradientOut, alpha, beta);
+			math::addTensors(context(), gradientIn[i], gradientOut, 1, beta);
 	}
 } /* namespace avocado */
 

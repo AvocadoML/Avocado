@@ -135,7 +135,7 @@ namespace avocado
 			input[i] = changeBatch(batchSize, getInputNode(i)->getOutputTensor());
 		Tensor output = changeBatch(batchSize, this->getOutputTensor());
 
-		getLayer().forward(input, output, 1, 0);
+		getLayer().forward(input, output);
 	}
 	void GraphNode::backward(int batchSize, Tensor &backup_tensor)
 	{
@@ -164,7 +164,7 @@ namespace avocado
 		if (m_is_bypassed_during_backward)
 			math::copyTensor(m_layer->context(), gradient_prev[0], gradient_next);
 		else
-			m_layer->backward(input, output, gradient_prev, gradient_next, 1, 0);
+			m_layer->backward(input, output, gradient_prev, gradient_next, 0);
 
 		for (int i = 0; i < numberOfInputs(); i++)
 		{

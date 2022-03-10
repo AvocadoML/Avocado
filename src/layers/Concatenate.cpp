@@ -55,14 +55,13 @@ namespace avocado
 		return result.release();
 	}
 
-	void Concatenate::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
+	void Concatenate::forward(const std::vector<Tensor> &input, Tensor &output)
 	{
-		// FIXME scaling factors do not work for this layer
 		math::concatTensors(context(), output, input);
 		math::activationForwardInPlace(context(), m_nonlinearity, output);
 	}
 	void Concatenate::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut,
-			Scalar alpha, Scalar beta)
+			Scalar beta)
 	{
 		// FIXME scaling factors do not work for this layer
 		math::activationBackwardInPlace(context(), m_nonlinearity, output, gradientOut);

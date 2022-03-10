@@ -87,33 +87,33 @@ namespace avocado
 		return new Dense(config["neurons"], config["nonlinearity"], config["use_bias"]); // @suppress("Ambiguous problem")
 	}
 
-	void Dense::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
+	void Dense::forward(const std::vector<Tensor> &input, Tensor &output)
 	{
 		assert(input.size() == 1 || input.size() == 2);
 
-		if (input.size() == 1)
+		math::gemm(context(), GemmOp::OP_N, GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 0);
+		if (m_use_bias)
 		{
-			math::gemm(context(), GemmOp::OP_N, GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 0);
-			if (m_use_bias)
-				math::addBias(context, alpha1, alpha2, input, bias, beta1, beta2, beta3, output, input[1], m_nonlinearity);
+			if (input.size() == 1)
+				math::addBias(context(), 1, 1, output, getBias().getParam(), 0, 0, 0, output, Tensor(), m_nonlinearity);
 			else
-				math::activationForwardInPlace(context, activation, output);
+				math::addBias(context(), 1, 1, output, getBias().getParam(), 0, 0, 0, output, input[1], m_nonlinearity);
 		}
 		else
 		{
-			math::copyTensor(context(), output, input[1]);
-			math::gemm(context(), GemmOp::OP_N, GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 1);
+			if (input.size() == 2)
+				math::addTensors(context(), output, input[1], 1, 0);
+			math::activationForwardInPlace(context(), m_nonlinearity, output);
 		}
 
 	}
-	void Dense::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
-			Scalar beta)
+	void Dense::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(gradientIn.size() == 1);
 
-//		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output);
-		math::gemm(context(), GemmOp::OP_N, GemmOp::OP_N, gradientIn[0], gradientOut, getWeights().getParam(), 1, 0);
+		math::activationBackwardInPlace(context(), m_nonlinearity, output, gradientOut);
+		math::gemm(context(), GemmOp::OP_N, GemmOp::OP_N, gradientIn[0], gradientOut, getWeights().getParam(), 1, beta);
 		math::gemm(context(), GemmOp::OP_T, GemmOp::OP_N, getWeights().getUpdate(), gradientOut, input[0], 1, 1);
 		if (m_use_bias)
 			math::reduceTensor(context(), TensorReduceOp::ADD, 1, 1, gradientOut, getBias().getUpdate());
