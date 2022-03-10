@@ -364,6 +364,10 @@ namespace avocado
 			m_data(static_cast<json_number>(i))
 	{
 	}
+	Json::Json(int64_t i) noexcept :
+			m_data(static_cast<json_number>(i))
+	{
+	}
 	Json::Json(size_t i) noexcept :
 			m_data(static_cast<json_number>(i))
 	{
@@ -460,6 +464,12 @@ namespace avocado
 			throw JsonTypeError(METHOD_NAME, storedType());
 		return static_cast<int>(std::get<json_number>(m_data));
 	}
+	Json::operator int64_t() const
+	{
+		if (not isNumber())
+			throw JsonTypeError(METHOD_NAME, storedType());
+		return static_cast<int64_t>(std::get<json_number>(m_data));
+	}
 	Json::operator size_t() const
 	{
 		if (not isNumber())
@@ -496,6 +506,12 @@ namespace avocado
 		if (not isNumber())
 			throw JsonTypeError(METHOD_NAME, storedType());
 		return static_cast<int>(std::get<json_number>(m_data));
+	}
+	int64_t Json::getLong() const
+	{
+		if (not isNumber())
+			throw JsonTypeError(METHOD_NAME, storedType());
+		return static_cast<int64_t>(std::get<json_number>(m_data));
 	}
 	double Json::getDouble() const
 	{

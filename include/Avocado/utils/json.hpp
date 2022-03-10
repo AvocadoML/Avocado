@@ -49,6 +49,7 @@ namespace avocado
 			Json(bool b) noexcept;
 
 			Json(int i) noexcept;
+			Json(int64_t i) noexcept;
 			Json(size_t i) noexcept;
 			Json(float f) noexcept;
 			Json(double d) noexcept;
@@ -71,6 +72,7 @@ namespace avocado
 
 			operator bool() const;
 			operator int() const;
+			operator int64_t() const;
 			operator size_t() const;
 			operator float() const;
 			operator double() const;
@@ -78,6 +80,7 @@ namespace avocado
 
 			bool getBool() const;
 			int getInt() const;
+			int64_t getLong() const;
 			double getDouble() const;
 			std::string getString() const;
 
