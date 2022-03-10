@@ -9,6 +9,7 @@
 #define AVOCADO_UTILS_ZIP_WRAPPER_HPP_
 
 #include <vector>
+#include <cstddef>
 
 namespace avocado
 {
