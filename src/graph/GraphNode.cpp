@@ -10,7 +10,6 @@
 #include <Avocado/math/tensor_operations.hpp>
 #include <Avocado/core/error_handling.hpp>
 #include <Avocado/core/Scalar.hpp>
-#include <Avocado/utils/testing_helpers.hpp>
 
 namespace
 {
@@ -136,7 +135,7 @@ namespace avocado
 			input[i] = changeBatch(batchSize, getInputNode(i)->getOutputTensor());
 		Tensor output = changeBatch(batchSize, this->getOutputTensor());
 
-		getLayer().forward(input, output);
+		getLayer().forward(input, output, 1, 0);
 	}
 	void GraphNode::backward(int batchSize, Tensor &backup_tensor)
 	{
@@ -165,14 +164,14 @@ namespace avocado
 		if (m_is_bypassed_during_backward)
 			math::copyTensor(m_layer->context(), gradient_prev[0], gradient_next);
 		else
-			m_layer->backward(input, output, gradient_prev, gradient_next);
+			m_layer->backward(input, output, gradient_prev, gradient_next, 1, 0);
 
 		for (int i = 0; i < numberOfInputs(); i++)
 		{
 			if (getInputNode(i)->m_done_backward == true) // here the temporary gradient tensor is added to the appropriate tensor
 			{
 				Tensor tmp = getInputNode(i)->getGradientTensor().view(gradient_prev[i].shape());
-				math::addTensors(m_layer->context(), 1, 1, tmp, gradient_prev[i], NonlinearityType::LINEAR);
+//				math::addTensors(m_layer->context(), 1, 1, tmp, gradient_prev[i], NonlinearityType::LINEAR); TODO
 			}
 			else
 				getInputNode(i)->m_done_backward = true;

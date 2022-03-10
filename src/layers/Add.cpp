@@ -53,27 +53,24 @@ namespace avocado
 		return new Add(config["nonlinearity"]);
 	}
 
-	void Add::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Add::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == m_input_shapes.size());
-		assert(same_device(context(), input[0], output));
 
-		math::copyTensor(context(), output, input[0]); // copy first input tensor to output
-
-		for (size_t i = 1; i < input.size() - 1; i++) // add all but first and last input tensors to output
-			math::addTensors(context(), 1, 1, input[i], output, NonlinearityType::LINEAR);
-
-		math::addTensors(context(), 1, 1, input.back(), output, m_nonlinearity); // add last input tensor to output and apply activation
+		math::tensorBinaryOp(context(), TensorBinaryOp::ADD, alpha, input[0], alpha, input[1], beta, output);
+		for (size_t i = 2; i < input.size(); i++)
+			math::addTensors(context(), output, input[i], alpha, 1);
+		math::activationForwardInPlace(context(), m_nonlinearity, output);
 	}
-	void Add::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev, Tensor &gradient_next)
+	void Add::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == m_input_shapes.size());
-		assert(gradient_prev.size() == m_input_shapes.size());
-		assert(same_device(context(), input[0], output, gradient_prev[0], gradient_next));
+		assert(gradientIn.size() == m_input_shapes.size());
 
-		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output); // in place activation backward pass
-		for (size_t i = 0; i < gradient_prev.size(); i++)
-			math::copyTensor(context(), gradient_prev[i], gradient_next);
+		math::activationBackwardInPlace(context(), m_nonlinearity, output, gradientOut);
+		for (size_t i = 0; i < gradientIn.size(); i++)
+			math::addTensors(context(), gradientIn[i], gradientOut, alpha, beta);
 	}
 } /* namespace avocado */
 

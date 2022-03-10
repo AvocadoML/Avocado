@@ -67,14 +67,15 @@ namespace avocado
 		return new Softmax(softmaxModeFromString(config["mode"]));
 	}
 
-	void Softmax::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Softmax::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
-		math::softmaxForward(context(), m_mode, 1, 0, input[0], output);
+//		math::softmaxForward(context(), m_mode, 1, 0, input[0], output);
 	}
-	void Softmax::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev, Tensor &gradient_next)
+	void Softmax::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == 1);
-		math::softmaxBackward(context(), m_mode, 1, 0, gradient_prev[0], gradient_next, output);
+//		math::softmaxBackward(context(), m_mode, 1, 0, gradient_prev[0], gradient_next, output);
 	}
 } /* namespace avocado */

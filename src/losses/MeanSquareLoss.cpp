@@ -20,11 +20,11 @@ namespace avocado
 
 	Scalar MeanSquareLoss::getLoss(const Context &context, const Tensor &output, const Tensor &target) const
 	{
-		return math::calcLossFunction(context, math::LossType::MEAN_SQUARE_LOSS, output, target);
+		return math::calcLossFunction(context, LossType::MEAN_SQUARE_LOSS, output, target);
 	}
 	void MeanSquareLoss::getGradient(const Context &context, Tensor &gradient, const Tensor &output, const Tensor &target) const
 	{
-		math::calcLossGradient(context, math::LossType::MEAN_SQUARE_LOSS, 1, 1, gradient, output, target, false);
+		math::calcLossGradient(context, LossType::MEAN_SQUARE_LOSS, 1, 1, gradient, output, target, false);
 	}
 
 	std::string MeanSquareLoss::name() const

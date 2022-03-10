@@ -87,34 +87,36 @@ namespace avocado
 		return new Dense(config["neurons"], config["nonlinearity"], config["use_bias"]); // @suppress("Ambiguous problem")
 	}
 
-	void Dense::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Dense::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1 || input.size() == 2);
-		assert(same_device(context(), input[0], output));
 
 		if (input.size() == 1)
-			math::gemm(context(), math::GemmOp::OP_N, math::GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 0);
+		{
+			math::gemm(context(), GemmOp::OP_N, GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 0);
+			if (m_use_bias)
+				math::addBias(context, alpha1, alpha2, input, bias, beta1, beta2, beta3, output, input[1], m_nonlinearity);
+			else
+				math::activationForwardInPlace(context, activation, output);
+		}
 		else
 		{
 			math::copyTensor(context(), output, input[1]);
-			math::gemm(context(), math::GemmOp::OP_N, math::GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 1);
+			math::gemm(context(), GemmOp::OP_N, GemmOp::OP_T, output, input[0], getWeights().getParam(), 1, 1);
 		}
-		if (m_use_bias)
-			math::addTensors(context(), 1, 1, getBias().getParam(), output, m_nonlinearity);
-		else
-			math::activationForward(context(), m_nonlinearity, 1, 1, 0, output, output);
+
 	}
-	void Dense::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev, Tensor &gradient_next)
+	void Dense::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == 1);
-		assert(gradient_prev.size() == 1);
-		assert(same_device(context(), input[0], output, gradient_prev[0], gradient_next));
+		assert(gradientIn.size() == 1);
 
-		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output);
-		math::gemm(context(), math::GemmOp::OP_N, math::GemmOp::OP_N, gradient_prev[0], gradient_next, getWeights().getParam(), 1, 0);
-		math::gemm(context(), math::GemmOp::OP_T, math::GemmOp::OP_N, getWeights().getUpdate(), gradient_next, input[0], 1, 1);
+//		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output);
+		math::gemm(context(), GemmOp::OP_N, GemmOp::OP_N, gradientIn[0], gradientOut, getWeights().getParam(), 1, 0);
+		math::gemm(context(), GemmOp::OP_T, GemmOp::OP_N, getWeights().getUpdate(), gradientOut, input[0], 1, 1);
 		if (m_use_bias)
-			math::reduceTensor(context(), math::TensorReduceOp::ADD, 1, 1, gradient_next, getBias().getUpdate());
+			math::reduceTensor(context(), TensorReduceOp::ADD, 1, 1, gradientOut, getBias().getUpdate());
 	}
 
 } /* namespace avocado */

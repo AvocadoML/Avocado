@@ -69,17 +69,11 @@ namespace avocado
 	}
 	Shape Affine::getWeightShape() const
 	{
-		if (m_use_weights)
-			return Shape( { getInputShape().lastDim() });
-		else
-			return Shape();
+		return Shape( { getInputShape().lastDim() });
 	}
 	Shape Affine::getBiasShape() const
 	{
-		if (m_use_bias)
-			return Shape( { getInputShape().lastDim() });
-		else
-			return Shape();
+		return Shape( { getInputShape().lastDim() });
 	}
 
 	std::string Affine::name() const
@@ -99,26 +93,30 @@ namespace avocado
 		return new Affine(config["nonlinearity"], config["use_weights"], config["use_bias"]); // @suppress("Ambiguous problem")
 	}
 
-	void Affine::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Affine::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
-		assert(same_device(context(), input[0], output));
-
 		math::affineForward(context(), 1, 0, input[0], output, getWeights().getParam(), getBias().getParam(), m_nonlinearity);
 	}
-	void Affine::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev, Tensor &gradient_next)
+	void Affine::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == 1);
-		assert(gradient_prev.size() == 1);
-		assert(same_device(context(), input[0], output, gradient_prev[0], gradient_next));
+		assert(gradientIn.size() == 1);
 
-		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output);
-		if (m_use_weights)
-			math::affineForward(context(), 1, 0, gradient_prev[0], gradient_next, getWeights().getParam(), Tensor( { }, dtype(), device()),
-					NonlinearityType::LINEAR);
-		else
-			math::copyTensor(context(), gradient_prev[0], gradient_next);
+		math::activationBackwardInPlace(context(), m_nonlinearity, output, gradientOut);
+		math::tensorBinaryOp(context(), TensorBinaryOp::MUL, alpha, gradientOut, 1, getWeights().getParam(), beta, gradientIn[0]);
 		if (m_use_bias)
-			math::reduceTensor(context(), math::TensorReduceOp::ADD, 1, 1, gradient_next, getBias().getUpdate());
+			math::reduceTensor(context(), TensorReduceOp::ADD, 1, 1, gradientOut, getBias().getUpdate());
+	}
+
+	void Affine::learn()
+	{
+		Layer::learn();
+
+		if (not m_use_weights)
+			math::setTensor(context(), getWeights().getParam(), 1);
+		if (not m_use_bias)
+			math::setTensor(context(), getBias().getParam(), 0);
 	}
 } /* namespace avocado */

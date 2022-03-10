@@ -53,9 +53,6 @@ namespace avocado
 
 			virtual NonlinearityType getNonlinearity() const noexcept;
 			virtual void setNonlinearity(NonlinearityType act) noexcept;
-			/**
-			 * documentation
-			 */
 			virtual std::string name() const = 0;
 			virtual Json getConfig() const;
 
@@ -87,9 +84,9 @@ namespace avocado
 			virtual Layer& setOptimizer(const Optimizer &optimizer);
 			virtual Layer& setRegularizer(const Regularizer &regularizer);
 
-			virtual void forward(const std::vector<Tensor> &input, Tensor &output) = 0;
-			virtual void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev,
-					Tensor &gradient_next) = 0;
+			virtual void forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta) = 0;
+			virtual void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut,
+					Scalar alpha, Scalar beta) = 0;
 
 			virtual void learn();
 

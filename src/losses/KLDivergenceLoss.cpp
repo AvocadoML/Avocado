@@ -10,7 +10,6 @@
 #include <Avocado/layers/Layer.hpp>
 #include <Avocado/math/training.hpp>
 #include <Avocado/utils/static_block.hpp>
-#include <Avocado/utils/testing_helpers.hpp>
 
 namespace avocado
 {
@@ -28,11 +27,11 @@ namespace avocado
 
 	Scalar KLDivergenceLoss::getLoss(const Context &context, const Tensor &output, const Tensor &target) const
 	{
-		return math::calcLossFunction(context, math::LossType::KL_DIVERGECE_LOSS, output, target);
+		return math::calcLossFunction(context, LossType::KL_DIVERGECE_LOSS, output, target);
 	}
 	void KLDivergenceLoss::getGradient(const Context &context, Tensor &gradient, const Tensor &output, const Tensor &target) const
 	{
-		math::calcLossGradient(context, math::LossType::KL_DIVERGECE_LOSS, 1, 1, gradient, output, target, m_is_combined_with_layer);
+		math::calcLossGradient(context, LossType::KL_DIVERGECE_LOSS, 1, 1, gradient, output, target, m_is_combined_with_layer);
 	}
 
 	std::string KLDivergenceLoss::name() const

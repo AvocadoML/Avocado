@@ -55,20 +55,19 @@ namespace avocado
 		return result.release();
 	}
 
-	void Input::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Input::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(same_device(context(), input[0], output));
 
-		math::activationForward(context(), m_nonlinearity, 1, 1, 0, output, output);
+//		math::activationForward(context(), m_nonlinearity, 1, 1, 0, output, output);
 	}
-	void Input::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev, Tensor &gradient_next)
+	void Input::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
-		assert(gradient_prev.size() == 1);
-		assert(same_device(context(), input[0], output, gradient_prev[0], gradient_next));
+		assert(gradientIn.size() == 1);
 
-		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output);
+//		math::activationBackward(context(), m_nonlinearity, 1, 0, gradient_next, gradient_next, output);
 	}
 
 } /* namespace avocado */

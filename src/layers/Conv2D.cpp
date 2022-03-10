@@ -8,6 +8,7 @@
 #include <Avocado/layers/Conv2D.hpp>
 #include <Avocado/core/Context.hpp>
 #include <Avocado/core/Tensor.hpp>
+#include <Avocado/core/Scalar.hpp>
 #include <Avocado/utils/json.hpp>
 
 //#include <Avocado/math/conv2D_util.hpp>
@@ -32,8 +33,8 @@ namespace avocado
 			Layer(activation)
 	{
 		m_output_filters = filters;
-		m_config.activation = m_nonlinearity;
-		std::copy(kernelSize.begin(), kernelSize.end(), m_config.kernel.begin());
+//		m_config.activation = m_nonlinearity;
+//		std::copy(kernelSize.begin(), kernelSize.end(), m_config.kernel.begin());
 		m_use_bias = useBias;
 	}
 
@@ -55,7 +56,7 @@ namespace avocado
 	}
 	Layer& Conv2D::setStride(std::initializer_list<int> stride) noexcept
 	{
-		std::copy(stride.begin(), stride.end(), m_config.stride.begin());
+//		std::copy(stride.begin(), stride.end(), m_config.stride.begin());
 		return *this;
 	}
 	Layer& Conv2D::setDilation(int dilation) noexcept
@@ -64,12 +65,12 @@ namespace avocado
 	}
 	Layer& Conv2D::setDilation(std::initializer_list<int> dilation) noexcept
 	{
-		std::copy(dilation.begin(), dilation.end(), m_config.dilation.begin());
+//		std::copy(dilation.begin(), dilation.end(), m_config.dilation.begin());
 		return *this;
 	}
 	Layer& Conv2D::setGroups(int groups) noexcept
 	{
-		m_config.groups = groups;
+//		m_config.groups = groups;
 		return *this;
 	}
 	bool Conv2D::isUsingBias() const noexcept
@@ -87,12 +88,12 @@ namespace avocado
 			throw IllegalArgument(METHOD_NAME, "Conv2D layer expects both input shapes to be equal");
 
 		m_input_shapes = shapes;
-		if (m_padding == ConvPadding::VALID)
-			m_config.padding.fill(0);
-		else
-		{
-
-		}
+//		if (m_padding == ConvPadding::VALID)
+//			m_config.padding.fill(0);
+//		else
+//		{
+//
+//		}
 	}
 	Shape Conv2D::getOutputShape() const
 	{
@@ -100,7 +101,7 @@ namespace avocado
 	}
 	Shape Conv2D::getWeightShape() const
 	{
-		return Shape( { m_output_filters, m_config.kernel[0], m_config.kernel[1], getInputShape().lastDim() });
+//		return Shape( { m_output_filters, m_config.kernel[0], m_config.kernel[1], getInputShape().lastDim() });
 	}
 	Shape Conv2D::getBiasShape() const
 	{
@@ -118,10 +119,10 @@ namespace avocado
 	{
 		Json result = Layer::getConfig();
 		result["output_filters"] = m_output_filters;
-		result["groups"] = m_config.groups;
-		result["kernel"] = Json( { m_config.kernel[0], m_config.kernel[1] });
-		result["stride"] = Json( { m_config.stride[0], m_config.stride[1] });
-		result["dilation"] = Json( { m_config.dilation[0], m_config.dilation[1] });
+//		result["groups"] = m_config.groups;
+//		result["kernel"] = Json( { m_config.kernel[0], m_config.kernel[1] });
+//		result["stride"] = Json( { m_config.stride[0], m_config.stride[1] });
+//		result["dilation"] = Json( { m_config.dilation[0], m_config.dilation[1] });
 		result["padding"] = static_cast<int>(m_padding);
 		result["use_bias"] = m_use_bias;
 		return result;
@@ -131,22 +132,20 @@ namespace avocado
 	{
 		std::unique_ptr<Conv2D> result = std::make_unique<Conv2D>(0, 0);
 		result->m_output_filters = config["output_filters"];
-		result->m_config.groups = config["groups"];
-		result->m_config.kernel[0] = config["kernel"][0];
-		result->m_config.kernel[1] = config["kernel"][1];
-		result->m_config.stride[0] = config["stride"][0];
-		result->m_config.stride[1] = config["stride"][1];
-		result->m_config.dilation[0] = config["dilation"][0];
-		result->m_config.dilation[1] = config["dilation"][1];
+//		result->m_config.groups = config["groups"];
+//		result->m_config.kernel[0] = config["kernel"][0];
+//		result->m_config.kernel[1] = config["kernel"][1];
+//		result->m_config.stride[0] = config["stride"][0];
+//		result->m_config.stride[1] = config["stride"][1];
+//		result->m_config.dilation[0] = config["dilation"][0];
+//		result->m_config.dilation[1] = config["dilation"][1];
 		result->m_padding = static_cast<ConvPadding>(config["padding"].getInt());
 		result->m_use_bias = config["use_bias"];
 		return result.release();
 	}
 
-	void Conv2D::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Conv2D::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
-		assert(same_device(context(), input[0], output));
-
 //		switch (m_algorithm)
 //		{
 //			case ConvAlgorithm::DIRECT:
@@ -203,9 +202,9 @@ namespace avocado
 //			}
 //		}
 	}
-	void Conv2D::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradient_prev, Tensor &gradient_next)
+	void Conv2D::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
-		assert(same_device(context(), input[0], output, gradient_prev[0], gradient_next));
 
 //		switch (m_algorithm)
 //		{

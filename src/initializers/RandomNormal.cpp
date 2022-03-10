@@ -38,7 +38,7 @@ namespace avocado
 		std::unique_ptr<float[]> tmp = std::make_unique<float[]>(volume);
 		for (size_t i = 0; i < volume; i++)
 			tmp[i] = scale * math::randGaussian() + m_mean;
-		param.getParam().copyFrom(tmp.get(), param.shape().volume());
+//		param.getParam().copyFrom(tmp.get(), param.shape().volume());
 	}
 
 	std::string RandomNormal::name() const
