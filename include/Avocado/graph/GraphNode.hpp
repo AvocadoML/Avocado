@@ -82,7 +82,6 @@ namespace avocado
 			static void removeLink(GraphNode *prev, GraphNode *next);
 			void removeAllLinks();
 
-			Tensor changeBatch(int batch_size, const Tensor &other);
 			void replaceLayer(Layer *new_layer);
 	};
 

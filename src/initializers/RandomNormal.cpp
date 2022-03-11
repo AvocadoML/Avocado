@@ -28,6 +28,8 @@ namespace avocado
 
 	void RandomNormal::init(Parameter &param)
 	{
+		if (param.shape().volume() == 0)
+			return;
 		float scale;
 		if (param.shape().length() == 1)
 			scale = m_stddev / sqrt(param.shape().firstDim());

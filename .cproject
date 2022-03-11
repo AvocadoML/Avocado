@@ -37,7 +37,7 @@
 									<listOptionValue builtIn="false" value="USE_CUDA=0"/>
 									<listOptionValue builtIn="false" value="USE_OPENCL=0"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.475767279" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fopenmp" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.475767279" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fopenmp -fsanitize=address -fsanitize=undefined" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2142522024" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1935142965" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
@@ -55,7 +55,7 @@
 									<listOptionValue builtIn="false" value="/usr/local/lib/libAvocadoOpenCLBackend_static.a"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libAvocadoCudaBackend_static.a"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.289644780" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-fopenmp" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.289644780" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-fopenmp -fsanitize=address -fsanitize=undefined" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.242394550" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

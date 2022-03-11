@@ -40,11 +40,11 @@ namespace avocado
 
 			internal::TensorDescWrapper m_tensor_descriptor;
 			internal::MemoryDescWrapper m_memory_descriptor;
-			const Tensor *m_owning_tensor_pointer = nullptr;
+			Tensor *m_owning_tensor_pointer = nullptr;
 			size_t m_memory_offset = 0;
 			bool m_is_page_locked = false;
 		public:
-			Tensor() = default;
+			Tensor();
 			Tensor(const Shape &shape, DataType dtype, Device device);
 			Tensor(const Shape &shape, const std::string &dtype, Device device);
 			Tensor(const Json &json, const SerializedObject &binarData);
@@ -89,8 +89,8 @@ namespace avocado
 			void pageLock();
 			void pageUnlock();
 
-			Tensor view() const;
-			Tensor view(const Shape &shape, size_t offsetInElements = 0) const;
+			Tensor view();
+			Tensor view(const Shape &shape, size_t offsetInElements = 0);
 
 			void* data();
 			const void* data() const;

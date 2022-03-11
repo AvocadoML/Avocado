@@ -158,20 +158,20 @@ namespace avocado
 	}
 	void Parameter::convertTo(const Context &context, DataType newType)
 	{
-//		m_param.convertTo(context, newType);
+		m_param.convertTo(newType);
 	}
 	void Parameter::init(const Context &context)
 	{
-//		if (isTrainable())
-//			getInitializer().init(context, *this);
+		if (isTrainable())
+			getInitializer().init(*this);
 	}
 	void Parameter::learn(const Context &context)
 	{
 		if (isTrainable())
 		{
-//			if (m_regularizer != nullptr)
-//				getRegularizer().apply(context, *this);
-//			getOptimizer().learn(context, *this);
+			if (m_regularizer != nullptr)
+				getRegularizer().apply(context, *this);
+			getOptimizer().learn(context, *this);
 		}
 	}
 

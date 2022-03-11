@@ -269,6 +269,7 @@ namespace avocado
 #else
 			void MemoryDescriptor::create(av_int64 sizeInBytes)
 			{
+//				std::cout << "creating memory of size " << sizeInBytes << ", " << this << '\n';
 				if (sizeInBytes > 0)
 					m_data = new int8_t[sizeInBytes];
 				else
@@ -281,6 +282,7 @@ namespace avocado
 #endif
 			void MemoryDescriptor::create(const MemoryDescriptor &other, av_int64 size, av_int64 offset)
 			{
+//				std::cout << "creating memory view " << this << "\n";
 				if (other.m_is_owning == false)
 					throw std::logic_error("cannot create memory view from non-owning memory descriptor");
 				if (other.m_size < offset + size)
@@ -298,6 +300,7 @@ namespace avocado
 			}
 			void MemoryDescriptor::destroy()
 			{
+//				std::cout << "destroying memory, " << m_is_owning << ", " << this << '\n';
 #if USE_CUDA
 				if (m_data != nullptr)
 				{
@@ -900,6 +903,9 @@ namespace avocado
 
 			MemoryDescriptor& getMemory(avMemoryDescriptor_t desc)
 			{
+//				MemoryDescriptor &tmp = getPool<MemoryDescriptor>().get(desc);
+//				std::cout << "---" << tmp.size() << '\n';
+//				return tmp;
 				return getPool<MemoryDescriptor>().get(desc);
 			}
 			ContextDescriptor& getContext(avContextDescriptor_t desc)

@@ -28,6 +28,8 @@ namespace avocado
 
 	void RandomUniform::init(Parameter &param)
 	{
+		if (param.shape().volume() == 0)
+			return;
 		const size_t volume = param.shape().volume();
 		std::unique_ptr<float[]> tmp = std::make_unique<float[]>(volume);
 		for (size_t i = 0; i < volume; i++)

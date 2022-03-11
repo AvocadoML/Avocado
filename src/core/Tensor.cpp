@@ -18,6 +18,11 @@
 
 namespace avocado
 {
+	Tensor::Tensor() :
+			Tensor(Shape(), DataType::UNKNOWN, Device::cpu())
+	{
+
+	}
 	Tensor::Tensor(const Shape &shape, DataType dtype, Device device) :
 			m_shape(shape),
 			m_dtype(dtype),
@@ -302,11 +307,11 @@ namespace avocado
 		}
 	}
 
-	Tensor Tensor::view() const
+	Tensor Tensor::view()
 	{
 		return view(shape(), 0);
 	}
-	Tensor Tensor::view(const Shape &shape, size_t offsetInElements) const
+	Tensor Tensor::view(const Shape &shape, size_t offsetInElements)
 	{
 		if (this->isView())
 			offsetInElements += m_memory_offset;
@@ -325,8 +330,8 @@ namespace avocado
 			result.m_owning_tensor_pointer = this;
 		else
 			result.m_owning_tensor_pointer = this->m_owning_tensor_pointer;
-		result.m_memory_descriptor = internal::MemoryDescWrapper(m_owning_tensor_pointer->m_memory_descriptor, offsetInElements,
-				result.sizeInBytes());
+		result.m_memory_descriptor = internal::MemoryDescWrapper(result.m_owning_tensor_pointer->m_memory_descriptor, result.sizeInBytes(),
+				offsetInElements);
 		result.m_memory_offset = offsetInElements;
 		result.m_is_page_locked = this->m_is_page_locked;
 		return result;

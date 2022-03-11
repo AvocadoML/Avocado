@@ -35,6 +35,13 @@ namespace
 			throw std::logic_error("no such value");
 		removeByIndex(vec, tmp);
 	}
+
+	avocado::Tensor change_batch(int batch_size, avocado::Tensor &other)
+	{
+		avocado::Shape tmp(other.shape());
+		tmp[0] = batch_size;
+		return other.view(tmp);
+	}
 }
 
 namespace avocado
@@ -132,8 +139,8 @@ namespace avocado
 
 		std::vector<Tensor> input(numberOfInputs());
 		for (int i = 0; i < numberOfInputs(); i++)
-			input[i] = changeBatch(batchSize, getInputNode(i)->getOutputTensor());
-		Tensor output = changeBatch(batchSize, this->getOutputTensor());
+			input[i] = change_batch(batchSize, getInputNode(i)->getOutputTensor());
+		Tensor output = change_batch(batchSize, this->getOutputTensor());
 
 		getLayer().forward(input, output);
 	}
@@ -147,7 +154,7 @@ namespace avocado
 		size_t offset = 0;
 		for (int i = 0; i < numberOfInputs(); i++)
 		{
-			input[i] = changeBatch(batchSize, getInputNode(i)->getOutputTensor());
+			input[i] = change_batch(batchSize, getInputNode(i)->getOutputTensor());
 			if (getInputNode(i)->m_done_backward == true) // gradient is propagated into temporary tensor and later added with the proper one
 			{
 				Shape tmp_shape(getInputNode(i)->getOutputShape());
@@ -156,10 +163,10 @@ namespace avocado
 				offset += gradient_prev[i].volume();
 			}
 			else
-				gradient_prev[i] = changeBatch(batchSize, getInputNode(i)->getGradientTensor());
+				gradient_prev[i] = change_batch(batchSize, getInputNode(i)->getGradientTensor());
 		}
-		Tensor output = changeBatch(batchSize, this->getOutputTensor());
-		Tensor gradient_next = changeBatch(batchSize, this->getGradientTensor());
+		Tensor output = change_batch(batchSize, this->getOutputTensor());
+		Tensor gradient_next = change_batch(batchSize, this->getGradientTensor());
 
 		if (m_is_bypassed_during_backward)
 			math::copyTensor(m_layer->context(), gradient_prev[0], gradient_next);
@@ -171,7 +178,7 @@ namespace avocado
 			if (getInputNode(i)->m_done_backward == true) // here the temporary gradient tensor is added to the appropriate tensor
 			{
 				Tensor tmp = getInputNode(i)->getGradientTensor().view(gradient_prev[i].shape());
-//				math::addTensors(m_layer->context(), 1, 1, tmp, gradient_prev[i], NonlinearityType::LINEAR); TODO
+				math::addTensors(m_layer->context(), gradient_prev[i], tmp, 1, 1);
 			}
 			else
 				getInputNode(i)->m_done_backward = true;
@@ -184,17 +191,20 @@ namespace avocado
 
 	const Layer& GraphNode::getLayer() const
 	{
-		assert(m_layer != nullptr);
+		if (m_layer == nullptr)
+			throw LogicError(METHOD_NAME, "layer is null");
 		return *m_layer;
 	}
 	Layer& GraphNode::getLayer()
 	{
-		assert(m_layer != nullptr);
+		if (m_layer == nullptr)
+			throw LogicError(METHOD_NAME, "layer is null");
 		return *m_layer;
 	}
 	const Tensor& GraphNode::getOutputTensor() const
 	{
-		assert(m_output_tensor != nullptr);
+		if (m_output_tensor == nullptr)
+			throw LogicError(METHOD_NAME, "output tensor is null");
 		return *m_output_tensor;
 	}
 	Tensor& GraphNode::getOutputTensor()
@@ -205,7 +215,8 @@ namespace avocado
 	}
 	const Tensor& GraphNode::getGradientTensor() const
 	{
-		assert(m_gradient_tensor != nullptr);
+		if (m_gradient_tensor == nullptr)
+			throw LogicError(METHOD_NAME, "gradient tensor is null");
 		return *m_gradient_tensor;
 	}
 	Tensor& GraphNode::getGradientTensor()
@@ -274,12 +285,6 @@ namespace avocado
 			removeLink(this, m_output_nodes[0]);
 	}
 
-	Tensor GraphNode::changeBatch(int batch_size, const Tensor &other)
-	{
-		Shape tmp(other.shape());
-		tmp[0] = batch_size;
-		return other.view(tmp);
-	}
 	void GraphNode::replaceLayer(Layer *new_layer)
 	{
 		if (getLayer().numberOfInputs() != new_layer->numberOfInputs())

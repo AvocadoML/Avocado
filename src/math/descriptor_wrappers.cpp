@@ -72,7 +72,7 @@ namespace avocado
 		}
 		MemoryDescWrapper::MemoryDescWrapper(const MemoryDescWrapper &desc, size_t sizeInBytes, size_t offsetInBytes)
 		{
-			switch (device().type())
+			switch (desc.device().type())
 			{
 				case DeviceType::CPU:
 				{
@@ -106,6 +106,8 @@ namespace avocado
 		}
 		MemoryDescWrapper::~MemoryDescWrapper()
 		{
+			if (m_descriptor == AVOCADO_NULL_DESCRIPTOR)
+				return;
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
 			switch (device().type())
 			{
@@ -169,6 +171,8 @@ namespace avocado
 		}
 		TensorDescWrapper::~TensorDescWrapper()
 		{
+			if (m_descriptor == AVOCADO_NULL_DESCRIPTOR)
+				return;
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
 			switch (device().type())
 			{
@@ -256,6 +260,8 @@ namespace avocado
 		}
 		ConvolutionDescWrapper::~ConvolutionDescWrapper()
 		{
+			if (m_descriptor == AVOCADO_NULL_DESCRIPTOR)
+				return;
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
 			switch (device().type())
 			{
@@ -347,6 +353,8 @@ namespace avocado
 		}
 		OptimizerDescWrapper::~OptimizerDescWrapper()
 		{
+			if (m_descriptor == AVOCADO_NULL_DESCRIPTOR)
+				return;
 			avStatus_t status = AVOCADO_STATUS_SUCCESS;
 			switch (device().type())
 			{
