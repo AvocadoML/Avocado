@@ -6,7 +6,7 @@
  */
 
 #if not USE_OPENCL
-#include <OpenCLBackend/opencl_backend.h>
+#include <Avocado/opencl_backend.h>
 
 namespace avocado
 {

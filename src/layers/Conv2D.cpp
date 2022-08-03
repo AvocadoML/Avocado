@@ -101,6 +101,7 @@ namespace avocado
 	}
 	Shape Conv2D::getWeightShape() const
 	{
+		return Shape();
 //		return Shape( { m_output_filters, m_config.kernel[0], m_config.kernel[1], getInputShape().lastDim() });
 	}
 	Shape Conv2D::getBiasShape() const

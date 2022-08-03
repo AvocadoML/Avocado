@@ -319,7 +319,7 @@ namespace avocado
 			throw ShapeMismatch(METHOD_NAME, "view would extend beyond the original tensor");
 
 		Tensor result;
-		result.m_shape = this->m_shape;
+		result.m_shape = shape;
 		result.create_stride();
 		result.m_dtype = this->m_dtype;
 		result.m_device = this->m_device;
@@ -446,9 +446,9 @@ namespace avocado
 			}
 			case DeviceType::OPENCL: // from CPU to OPENCL
 			{
-				backend::avStatus_t status = backend::openclCopyMemoryToHost(get_default_context(m_device), dst, m_memory_descriptor, src_offset,
-						count);
-				CHECK_OPENCL_STATUS(status);
+//				backend::avStatus_t status = backend::openclCopyMemoryToHost(get_default_context(m_device), dst, m_memory_descriptor, src_offset,
+//						count);
+//				CHECK_OPENCL_STATUS(status);
 				break;
 			}
 		}
@@ -469,9 +469,9 @@ namespace avocado
 			}
 			case DeviceType::OPENCL: // from CPU to OPENCL
 			{
-				backend::avStatus_t status = backend::openclCopyMemoryFromHost(get_default_context(m_device), m_memory_descriptor, dst_offset, src,
-						count);
-				CHECK_OPENCL_STATUS(status);
+//				backend::avStatus_t status = backend::openclCopyMemoryFromHost(get_default_context(m_device), m_memory_descriptor, dst_offset, src,
+//						count);
+//				CHECK_OPENCL_STATUS(status);
 				break;
 			}
 		}

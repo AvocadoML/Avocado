@@ -29,11 +29,14 @@ namespace avocado
 
 	Scalar CrossEntropyLoss::getLoss(const Context &context, const Tensor &output, const Tensor &target) const
 	{
-		return math::calcLossFunction(context, LossType::CROSS_ENTROPY_LOSS, output, target);
+		const double scale = 1.0 / output.firstDim();
+		const double result = scale * math::calcLossFunction(context, LossType::CROSS_ENTROPY_LOSS, output, target).get<double>();
+		return Scalar(result);
 	}
 	void CrossEntropyLoss::getGradient(const Context &context, Tensor &gradient, const Tensor &output, const Tensor &target) const
 	{
-		math::calcLossGradient(context, LossType::CROSS_ENTROPY_LOSS, 1, 1, gradient, output, target, m_is_combined_with_layer);
+		const double scale = 1.0 / output.firstDim();
+		math::calcLossGradient(context, LossType::CROSS_ENTROPY_LOSS, scale, 1, gradient, output, target, m_is_combined_with_layer);
 	}
 
 	std::string CrossEntropyLoss::name() const

@@ -6,7 +6,6 @@
  */
 
 #include <Avocado/core/Scalar.hpp>
-#include <Avocado/backend/backend_defs.h>
 
 #include <cassert>
 

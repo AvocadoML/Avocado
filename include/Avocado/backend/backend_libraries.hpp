@@ -8,8 +8,8 @@
 #ifndef AVOCADO_BACKEND_BACKEND_LIBRARIES_HPP_
 #define AVOCADO_BACKEND_BACKEND_LIBRARIES_HPP_
 
-#include <CpuBackend/cpu_backend.h>
-#include <CudaBackend/cuda_backend.h>
-#include <OpenCLBackend/opencl_backend.h>
+#include <Avocado/cpu_backend.h>
+#include <Avocado/cuda_backend.h>
+#include <Avocado/opencl_backend.h>
 
 #endif /* AVOCADO_BACKEND_BACKEND_LIBRARIES_HPP_ */

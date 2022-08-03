@@ -9,7 +9,7 @@
 #define AVOCADO_CORE_CONTEXT_HPP_
 
 #include <Avocado/core/Device.hpp>
-#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend_defs.h>
 
 namespace avocado
 {

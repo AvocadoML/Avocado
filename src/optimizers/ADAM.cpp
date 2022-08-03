@@ -79,6 +79,7 @@ namespace avocado
 			m_workspace = std::make_unique<Tensor>(Shape( { 2 * param.shape().volume() }), param.dtype(), param.device());
 
 		math::optimizerLearn(context, m_config, 1, 1, param.getParam(), param.getUpdate(), *m_workspace);
+		param.getUpdate().zeroall();
 	}
 
 	std::string ADAM::name() const

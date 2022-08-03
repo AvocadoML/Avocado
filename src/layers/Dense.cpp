@@ -87,7 +87,7 @@ namespace avocado
 		return new Dense(config["neurons"], config["nonlinearity"], config["use_bias"]); // @suppress("Ambiguous problem")
 	}
 
-	void Dense::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Dense::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1 || input.size() == 2);
 
@@ -107,7 +107,8 @@ namespace avocado
 		}
 
 	}
-	void Dense::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta)
+	void Dense::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(gradientIn.size() == 1);

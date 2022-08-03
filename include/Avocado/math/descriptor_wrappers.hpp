@@ -8,7 +8,7 @@
 #ifndef AVOCADO_MATH_DESCRIPTOR_WRAPPERS_HPP_
 #define AVOCADO_MATH_DESCRIPTOR_WRAPPERS_HPP_
 
-#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend_defs.h>
 #include <Avocado/core/Device.hpp>
 #include <cstdint>
 #include <cstddef>

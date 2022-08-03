@@ -53,7 +53,7 @@ namespace avocado
 		return new Add(config["nonlinearity"]);
 	}
 
-	void Add::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Add::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == m_input_shapes.size());
 
@@ -62,7 +62,8 @@ namespace avocado
 			math::addTensors(context(), output, input[i], 1, 1);
 		math::activationForwardInPlace(context(), m_nonlinearity, output);
 	}
-	void Add::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta)
+	void Add::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == m_input_shapes.size());
 		assert(gradientIn.size() == m_input_shapes.size());

@@ -33,8 +33,8 @@ namespace avocado
 			}
 			case DeviceType::OPENCL:
 			{
-				backend::avStatus_t status = backend::openclCreateContextDescriptor(&m_data, device.index());
-				CHECK_OPENCL_STATUS(status)
+//				backend::avStatus_t status = backend::openclCreateContextDescriptor(&m_data, device.index());
+//				CHECK_OPENCL_STATUS(status)
 				break;
 			}
 		}
@@ -63,7 +63,7 @@ namespace avocado
 				status = backend::cudaDestroyContextDescriptor(m_data);
 				break;
 			case DeviceType::OPENCL:
-				status = backend::openclDestroyContextDescriptor(m_data);
+//				status = backend::openclDestroyContextDescriptor(m_data);
 				break;
 		}
 		if (status == backend::AVOCADO_STATUS_FREE_FAILED)
@@ -95,8 +95,8 @@ namespace avocado
 			}
 			case DeviceType::OPENCL:
 			{
-				backend::avStatus_t status = backend::openclSynchronizeWithContext(m_data);
-				CHECK_OPENCL_STATUS(status)
+//				backend::avStatus_t status = backend::openclSynchronizeWithContext(m_data);
+//				CHECK_OPENCL_STATUS(status)
 				break;
 			}
 		}
@@ -118,8 +118,8 @@ namespace avocado
 				return backend::cpuGetDefaultContext();
 			case DeviceType::CUDA:
 				return backend::cudaGetDefaultContext(device.index());
-			case DeviceType::OPENCL:
-				return backend::openclGetDefaultContext(device.index());
+//			case DeviceType::OPENCL:
+//				return backend::openclGetDefaultContext(device.index());
 			default:
 				return backend::AVOCADO_NULL_DESCRIPTOR;
 		}

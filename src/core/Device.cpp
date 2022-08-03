@@ -32,7 +32,7 @@ namespace
 				cudaGetDeviceProperty(index, prop, &result);
 				break;
 			case AVOCADO_DEVICE_OPENCL:
-				openclGetDeviceProperty(index, prop, &result);
+//				openclGetDeviceProperty(index, prop, &result);
 				break;
 		}
 		return result;
@@ -452,7 +452,7 @@ namespace avocado
 	}
 	int Device::numberOfOpenCLDevices() noexcept
 	{
-		static const int number_of_opencl_devices = openclGetNumberOfDevices();
+		static const int number_of_opencl_devices = 0; //openclGetNumberOfDevices();
 		return number_of_opencl_devices;
 	}
 	bool Device::isCopyPossible(Device from, Device to) noexcept

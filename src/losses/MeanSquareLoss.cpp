@@ -7,6 +7,7 @@
 
 #include <Avocado/losses/MeanSquareLoss.hpp>
 #include <Avocado/core/Scalar.hpp>
+#include <Avocado/core/Tensor.hpp>
 #include <Avocado/math/training.hpp>
 #include <Avocado/utils/json.hpp>
 #include <Avocado/utils/static_block.hpp>
@@ -20,7 +21,9 @@ namespace avocado
 
 	Scalar MeanSquareLoss::getLoss(const Context &context, const Tensor &output, const Tensor &target) const
 	{
-		return math::calcLossFunction(context, LossType::MEAN_SQUARE_LOSS, output, target);
+		const double scale = 1.0 / output.firstDim();
+		const double result = scale * math::calcLossFunction(context, LossType::MEAN_SQUARE_LOSS, output, target).get<double>();
+		return Scalar(result);
 	}
 	void MeanSquareLoss::getGradient(const Context &context, Tensor &gradient, const Tensor &output, const Tensor &target) const
 	{

@@ -208,8 +208,8 @@ namespace avocado
 			backend::avTensorDescriptor_t targetDesc = target.getDescriptor();
 			backend::avMemoryDescriptor_t targetMem = target.getMemory();
 
-			backend::avTensorDescriptor_t gradientDesc = target.getDescriptor();
-			backend::avMemoryDescriptor_t gradientMem = target.getMemory();
+			backend::avTensorDescriptor_t gradientDesc = gradient.getDescriptor();
+			backend::avMemoryDescriptor_t gradientMem = gradient.getMemory();
 
 			switch (context.device().type())
 			{

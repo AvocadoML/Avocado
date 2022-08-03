@@ -162,14 +162,14 @@ namespace avocado
 
 		m_context = Context(newDevice);
 		for (size_t i = 0; i < m_layers.size(); i++)
-			m_layers[i]->changeContext(m_context);
+			m_layers.at(i)->changeContext(m_context);
 		for (size_t i = 0; i < m_nodes.size(); i++)
-			m_nodes[i]->moveTo(newDevice);
+			m_nodes.at(i)->moveTo(newDevice);
 		if (m_backup_tensor != nullptr)
 			m_backup_tensor->moveTo(newDevice);
 		for (size_t i = 0; i < m_targets.size(); i++)
-			if (m_targets[i] != nullptr)
-				m_targets[i]->moveTo(newDevice);
+			if (m_targets.at(i) != nullptr)
+				m_targets.at(i)->moveTo(newDevice);
 	}
 	void Graph::setInputShape(const Shape &shape)
 	{
@@ -178,10 +178,10 @@ namespace avocado
 	void Graph::setInputShape(const std::vector<Shape> &list)
 	{
 		for (int i = 0; i < numberOfInputs(); i++)
-			m_input_nodes[i]->getLayer().setInputShape(list[i]);
+			m_input_nodes.at(i)->getLayer().setInputShape(list[i]);
 
 		for (size_t i = 0; i < m_nodes.size(); i++)
-			m_nodes[i]->resolveInputShapes();
+			m_nodes.at(i)->resolveInputShapes();
 		m_backup_tensor = nullptr;
 	}
 
@@ -190,24 +190,24 @@ namespace avocado
 		if (not isTrainable())
 			throw LogicError(METHOD_NAME, "Graph is not trainable");
 		for (size_t i = 0; i < m_layers.size(); i++)
-			m_layers[i]->setOptimizer(optimizer);
+			m_layers.at(i)->setOptimizer(optimizer);
 	}
 	void Graph::setRegularizer(const Regularizer &regularizer)
 	{
 		if (not isTrainable())
 			throw LogicError(METHOD_NAME, "Graph is not trainable");
 		for (size_t i = 0; i < m_layers.size(); i++)
-			m_layers[i]->setRegularizer(regularizer);
+			m_layers.at(i)->setRegularizer(regularizer);
 	}
 	void Graph::init()
 	{
 		for (size_t i = 0; i < m_layers.size(); i++)
-			m_layers[i]->init();
+			m_layers.at(i)->init();
 	}
 	void Graph::forward(int batchSize)
 	{
 		for (size_t i = 0; i < m_nodes.size(); i++)
-			m_nodes[i]->forward(batchSize);
+			m_nodes.at(i)->forward(batchSize);
 	}
 	void Graph::backward(int batchSize)
 	{
@@ -216,7 +216,7 @@ namespace avocado
 		if (m_backup_tensor == nullptr)
 			create_backup_tensor();
 		for (size_t i = 0; i < m_nodes.size(); i++)
-			m_nodes[i]->prepareForBackward();
+			m_nodes.at(i)->prepareForBackward();
 
 		for (size_t i = 0; i < m_targets.size(); i++)
 		{
@@ -225,11 +225,28 @@ namespace avocado
 			Tensor gradient = getGradient(i).view(tmp);
 			Tensor output = getOutput(i).view(tmp);
 			Tensor target = getTarget(i).view(tmp);
-			m_losses[i]->getGradient(context(), gradient, output, target);
+			m_losses.at(i)->getGradient(context(), gradient, output, target);
+			for (int j = 0; j < 10; j++)
+				std::cout << gradient.get<float>( { 0, j }) << " ";
+			std::cout << '\n';
+
+			for (int j = 0; j < 10; j++)
+				std::cout << output.get<float>( { 0, j }) << " ";
+			std::cout << '\n';
+			for (int j = 0; j < 10; j++)
+				std::cout << output.get<float>( { 1, j }) << " ";
+			std::cout << std::endl;
+
+			for (int j = 0; j < 10; j++)
+				std::cout << target.get<float>( { 0, j }) << " ";
+			std::cout << '\n';
+			for (int j = 0; j < 10; j++)
+				std::cout << target.get<float>( { 1, j }) << " ";
+			std::cout << std::endl << std::endl;
 		}
 
 		for (int i = static_cast<int>(m_nodes.size()) - 1; i >= 0; i--)
-			m_nodes[i]->backward(batchSize, *m_backup_tensor);
+			m_nodes.at(i)->backward(batchSize, *m_backup_tensor);
 	}
 	std::vector<Scalar> Graph::getLoss(int batchSize)
 	{
@@ -243,7 +260,7 @@ namespace avocado
 			tmp[0] = batchSize;
 			Tensor output = getOutput(i).view(tmp);
 			Tensor target = getTarget(i).view(tmp);
-			result[i] = m_losses[i]->getLoss(context(), output, target);
+			result.at(i) = m_losses.at(i)->getLoss(context(), output, target);
 		}
 		return result;
 	}
@@ -253,15 +270,15 @@ namespace avocado
 			throw LogicError(METHOD_NAME, "Graph is not trainable");
 
 		for (int i = 0; i < numberOfLayers(); i++)
-			m_layers[i]->learn();
+			m_layers.at(i)->learn();
 	}
 
 	void Graph::print() const
 	{
 		for (size_t i = 0; i < m_nodes.size(); i++)
 		{
-			GraphNode *node = m_nodes[i].get();
-			std::cout << i << ' ' << m_nodes[i]->getLayer().name() << " (" << m_nodes[i]->getLayer().getNonlinearity() << ") : "
+			GraphNode *node = m_nodes.at(i).get();
+			std::cout << i << ' ' << m_nodes.at(i)->getLayer().name() << " (" << m_nodes.at(i)->getLayer().getNonlinearity() << ") : "
 					<< node->getOutputShape() << " : {";
 			for (int j = 0; j < node->numberOfInputs(); j++)
 			{
@@ -279,7 +296,8 @@ namespace avocado
 			std::cout << "}\n";
 		}
 		for (size_t i = 0; i < m_output_nodes.size(); i++)
-			std::cout << "Output:" << i << " : {" << index_of_node(m_output_nodes[i]) << "} : " << m_output_nodes[i]->getOutputShape() << std::endl;
+			std::cout << "Output:" << i << " : {" << index_of_node(m_output_nodes.at(i)) << "} : " << m_output_nodes.at(i)->getOutputShape()
+					<< std::endl;
 	}
 	void Graph::makeNonTrainable()
 	{
@@ -299,8 +317,8 @@ namespace avocado
 	{
 		for (size_t i = 0; i < m_nodes.size(); i++)
 		{
-			size_t indeOfLayer = index_of_layer(&(m_nodes[i]->getLayer()));
-			table.getHistogram(indeOfLayer).collectStatistics(m_nodes[i]->getOutputTensor());
+			size_t indeOfLayer = index_of_layer(&(m_nodes.at(i)->getLayer()));
+			table.getHistogram(indeOfLayer).collectStatistics(m_nodes.at(i)->getOutputTensor());
 		}
 	}
 

@@ -64,8 +64,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclCreateMemoryDescriptor(&m_descriptor, device.index(), sizeInBytes);
-					CHECK_OPENCL_STATUS(status)
+//					avStatus_t status = openclCreateMemoryDescriptor(&m_descriptor, device.index(), sizeInBytes);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -88,8 +88,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclCreateMemoryView(&m_descriptor, desc, sizeInBytes, offsetInBytes);
-					CHECK_OPENCL_STATUS(status)
+//					avStatus_t status = openclCreateMemoryView(&m_descriptor, desc, sizeInBytes, offsetInBytes);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -118,7 +118,7 @@ namespace avocado
 					status = cudaDestroyMemoryDescriptor(m_descriptor);
 					break;
 				case DeviceType::OPENCL:
-					status = openclDestroyMemoryDescriptor(m_descriptor);
+//					status = openclDestroyMemoryDescriptor(m_descriptor);
 					break;
 			}
 			if (status == AVOCADO_STATUS_FREE_FAILED)
@@ -153,8 +153,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclCreateTensorDescriptor(&m_descriptor);
-					CHECK_OPENCL_STATUS(status)
+//					avStatus_t status = openclCreateTensorDescriptor(&m_descriptor);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -183,7 +183,7 @@ namespace avocado
 					status = cudaDestroyTensorDescriptor(m_descriptor);
 					break;
 				case DeviceType::OPENCL:
-					status = openclDestroyTensorDescriptor(m_descriptor);
+//					status = openclDestroyTensorDescriptor(m_descriptor);
 					break;
 			}
 			if (status == AVOCADO_STATUS_FREE_FAILED)
@@ -214,8 +214,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclSetTensorDescriptor(m_descriptor, static_cast<avDataType_t>(dtype), shape.length(), shape.data());
-					CHECK_OPENCL_STATUS(status)
+//					avStatus_t status = openclSetTensorDescriptor(m_descriptor, static_cast<avDataType_t>(dtype), shape.length(), shape.data());
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -242,8 +242,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclCreateConvolutionDescriptor(&m_descriptor);
-					CHECK_OPENCL_STATUS(status)
+//					avStatus_t status = openclCreateConvolutionDescriptor(&m_descriptor);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -272,7 +272,7 @@ namespace avocado
 					status = cudaDestroyConvolutionDescriptor(m_descriptor);
 					break;
 				case DeviceType::OPENCL:
-					status = openclDestroyConvolutionDescriptor(m_descriptor);
+//					status = openclDestroyConvolutionDescriptor(m_descriptor);
 					break;
 			}
 			if (status == AVOCADO_STATUS_FREE_FAILED)
@@ -335,8 +335,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclCreateOptimizerDescriptor(&m_descriptor);
-					CHECK_OPENCL_STATUS(status)
+//					avStatus_t status = openclCreateOptimizerDescriptor(&m_descriptor);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -365,7 +365,7 @@ namespace avocado
 					status = cudaDestroyOptimizerDescriptor(m_descriptor);
 					break;
 				case DeviceType::OPENCL:
-					status = openclDestroyOptimizerDescriptor(m_descriptor);
+//					status = openclDestroyOptimizerDescriptor(m_descriptor);
 					break;
 			}
 			if (status == AVOCADO_STATUS_FREE_FAILED)
@@ -426,8 +426,8 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclSetMemory(context, mem, dstOffset, count, pattern, patternSizeInBytes);
-					CHECK_OPENCL_STATUS(status);
+//					avStatus_t status = openclSetMemory(context, mem, dstOffset, count, pattern, patternSizeInBytes);
+//					CHECK_OPENCL_STATUS(status);
 					break;
 				}
 			}
@@ -458,9 +458,9 @@ namespace avocado
 						}
 						case DeviceType::OPENCL: // from CPU to OPENCL
 						{
-							avStatus_t status = openclCopyMemoryFromHost(context, dstMem, dstOffset,
-									reinterpret_cast<const int8_t*>(cpuGetMemoryPointer(srcMem)) + srcOffset, count);
-							CHECK_OPENCL_STATUS(status);
+//							avStatus_t status = openclCopyMemoryFromHost(context, dstMem, dstOffset,
+//									reinterpret_cast<const int8_t*>(cpuGetMemoryPointer(srcMem)) + srcOffset, count);
+//							CHECK_OPENCL_STATUS(status);
 							break;
 						}
 					}
@@ -489,8 +489,8 @@ namespace avocado
 							avStatus_t status = cudaCopyMemoryToHost(context, buffer.get(), srcMem, srcOffset, count);
 							CHECK_CUDA_STATUS(status);
 
-							status = openclCopyMemoryFromHost(context, dstMem, dstOffset, buffer.get(), count);
-							CHECK_OPENCL_STATUS(status);
+//							status = openclCopyMemoryFromHost(context, dstMem, dstOffset, buffer.get(), count);
+//							CHECK_OPENCL_STATUS(status);
 							break;
 						}
 					}
@@ -498,32 +498,32 @@ namespace avocado
 				}
 				case DeviceType::OPENCL: // source device is OPENCL
 				{
-					switch (get_device(dstMem).type())
-					{
-						case DeviceType::CPU: // from OPENCL to CPU
-						{
-							avStatus_t status = openclCopyMemoryToHost(context, reinterpret_cast<int8_t*>(cpuGetMemoryPointer(dstMem)) + dstOffset,
-									srcMem, srcOffset, count);
-							CHECK_CUDA_STATUS(status);
-							break;
-						}
-						case DeviceType::CUDA: // from OPENCL to CUDA
-						{
-							std::unique_ptr<int8_t[]> buffer = std::make_unique<int8_t[]>(count);
-							avStatus_t status = openclCopyMemoryToHost(context, buffer.get(), srcMem, srcOffset, count);
-							CHECK_OPENCL_STATUS(status);
-
-							status = openclCopyMemoryFromHost(context, dstMem, dstOffset, buffer.get(), count);
-							CHECK_OPENCL_STATUS(status);
-							break;
-						}
-						case DeviceType::OPENCL: // from OPENCL to OPENCL
-						{
-							avStatus_t status = openclCopyMemory(context, dstMem, dstOffset, srcMem, srcOffset, count);
-							CHECK_OPENCL_STATUS(status);
-							break;
-						}
-					}
+//					switch (get_device(dstMem).type())
+//					{
+//						case DeviceType::CPU: // from OPENCL to CPU
+//						{
+//							avStatus_t status = openclCopyMemoryToHost(context, reinterpret_cast<int8_t*>(cpuGetMemoryPointer(dstMem)) + dstOffset,
+//									srcMem, srcOffset, count);
+//							CHECK_CUDA_STATUS(status);
+//							break;
+//						}
+//						case DeviceType::CUDA: // from OPENCL to CUDA
+//						{
+//							std::unique_ptr<int8_t[]> buffer = std::make_unique<int8_t[]>(count);
+//							avStatus_t status = openclCopyMemoryToHost(context, buffer.get(), srcMem, srcOffset, count);
+//							CHECK_OPENCL_STATUS(status);
+//
+//							status = openclCopyMemoryFromHost(context, dstMem, dstOffset, buffer.get(), count);
+//							CHECK_OPENCL_STATUS(status);
+//							break;
+//						}
+//						case DeviceType::OPENCL: // from OPENCL to OPENCL
+//						{
+//							avStatus_t status = openclCopyMemory(context, dstMem, dstOffset, srcMem, srcOffset, count);
+//							CHECK_OPENCL_STATUS(status);
+//							break;
+//						}
+//					}
 					break;
 				}
 			}
@@ -549,9 +549,9 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					avStatus_t status = openclChangeType(context, dstMem, static_cast<avDataType_t>(dstType), srcMem,
-							static_cast<avDataType_t>(srcType), elements);
-					CHECK_OPENCL_STATUS(status);
+//					avStatus_t status = openclChangeType(context, dstMem, static_cast<avDataType_t>(dstType), srcMem,
+//							static_cast<avDataType_t>(srcType), elements);
+//					CHECK_OPENCL_STATUS(status);
 					break;
 				}
 			}

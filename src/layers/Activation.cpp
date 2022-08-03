@@ -61,13 +61,13 @@ namespace avocado
 		return new Activation(config["nonlinearity"]);
 	}
 
-	void Activation::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Activation::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
 		math::activationForward(context(), m_nonlinearity, 1, input[0], 0, output);
 	}
 	void Activation::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut,
-			Scalar beta)
+			Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(gradientIn.size() == 1);

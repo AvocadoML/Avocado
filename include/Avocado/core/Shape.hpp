@@ -8,13 +8,14 @@
 #ifndef AVOCADO_CORE_SHAPE_HPP_
 #define AVOCADO_CORE_SHAPE_HPP_
 
-#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend_defs.h>
 #include <stddef.h>
 #include <initializer_list>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace avocado /* forward declarations */
 {
@@ -26,10 +27,10 @@ namespace avocado
 	class Shape
 	{
 		public:
-			static const int max_dimension = backend::AVOCADO_MAX_TENSOR_DIMENSIONS;
+			static constexpr int max_dimension = backend::AVOCADO_MAX_TENSOR_DIMENSIONS;
 		private:
-			int m_dim[max_dimension];
-			int m_length = 0;
+			std::array<int, max_dimension> m_dimensions;
+			int m_rank = 0;
 		public:
 			Shape() noexcept;
 			Shape(const Json &json);
@@ -39,6 +40,7 @@ namespace avocado
 			std::string toString() const;
 
 			int length() const noexcept;
+			int rank() const noexcept;
 			int at(int index) const;
 			int& at(int index);
 			int operator[](int index) const;
@@ -51,6 +53,8 @@ namespace avocado
 			int volumeWithoutFirstDim() const noexcept;
 			int volumeWithoutLastDim() const noexcept;
 			int volume(std::initializer_list<int> dims) const;
+			int volumeOverDims(std::initializer_list<int> dims) const;
+			int volumeOverDims(const std::vector<int> &dims) const;
 
 			friend bool operator==(const Shape &lhs, const Shape &rhs) noexcept;
 			friend bool operator!=(const Shape &lhs, const Shape &rhs) noexcept;
@@ -66,7 +70,7 @@ namespace avocado
 	{
 		public:
 			ShapeMismatch(const char *function, const std::string &what_arg);
-			ShapeMismatch(const char *function, int expected_dim, int actual_dim);
+			ShapeMismatch(const char *function, int expected_rank, int actual_rank);
 			ShapeMismatch(const char *function, const Shape &expected, const Shape &got);
 	};
 

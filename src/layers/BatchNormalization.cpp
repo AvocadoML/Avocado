@@ -110,7 +110,7 @@ namespace avocado
 		m_total_steps = 0;
 		m_running_id = -1;
 	}
-	void BatchNormalization::forward(const std::vector<Tensor> &input, Tensor &output)
+	void BatchNormalization::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
 
@@ -135,7 +135,7 @@ namespace avocado
 		}
 	}
 	void BatchNormalization::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut,
-			Scalar beta)
+			Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(gradientIn.size() == 1);

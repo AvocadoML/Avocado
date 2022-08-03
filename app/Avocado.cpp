@@ -6,6 +6,7 @@
 #include <iostream>
 #include <Avocado/core/Context.hpp>
 #include <Avocado/core/Tensor.hpp>
+#include <Avocado/core/Shape.hpp>
 #include <Avocado/core/Scalar.hpp>
 #include <Avocado/core/DataType.hpp>
 #include <Avocado/math/tensor_operations.hpp>
@@ -13,8 +14,15 @@
 #include <Avocado/graph/Graph.hpp>
 #include <Avocado/layers/Dense.hpp>
 #include <Avocado/layers/Flatten.hpp>
+#include <Avocado/layers/Softmax.hpp>
+#include <Avocado/layers/Activation.hpp>
 #include <Avocado/optimizers/SGD.hpp>
+#include <Avocado/optimizers/ADAM.hpp>
+#include <Avocado/losses/MeanSquareLoss.hpp>
+#include <Avocado/losses/CrossEntropyLoss.hpp>
 #include <Avocado/utils/file_helpers.hpp>
+
+#include <Avocado/expression/Expression.hpp>
 
 #include <numeric>
 #include <algorithm>
@@ -103,11 +111,13 @@ class MNIST
 					std::random_shuffle(ordering.begin(), ordering.end());
 					index = 0;
 				}
-				int sample_index = ordering.at(index);
+				const int sample_index = ordering.at(index) % 1000;
 				index++;
 
-				images.copyToHost(host_input.data() + i * 28 * 28, 28 * 28);
-				host_target[i * 10 + sample_index] = 1.0f;
+				Tensor tmp = const_cast<Tensor&>(images).view(Shape( { 28, 28 }), sample_index * 28 * 28);
+				tmp.copyToHost(host_input.data() + i * 28 * 28, 28 * 28);
+				const int label = labels.get<int>( { sample_index });
+				host_target.at(i * 10 + label) = 1.0f;
 			}
 
 			Tensor tmp_input(input.shape(), input.dtype(), Device::cpu());
@@ -168,18 +178,21 @@ double get_accuracy(const Tensor &output, const Tensor &target)
 
 void train_mnist()
 {
+	Device::cpu().setNumberOfThreads(1);
 	MNIST dataset;
 //	for (int i = 0; i < 10; i++)
 //		dataset.printSample(i);
 
-	int batch_size = 1;
+	int batch_size = 2;
 	Graph model;
 	auto x = model.addInput( { batch_size, 28 * 28 });
 //	x = model.add(Flatten(), x);
+//	x = model.add(Dense(30, "relu"), x);
 	x = model.add(Dense(10, "sigmoid"), x);
-	model.addOutput(x);
+//	x = model.add(Activation("sigmoid"), x);
+	model.addOutput(x, MeanSquareLoss());
 	model.init();
-	model.setOptimizer(SGD(1.0e-3));
+	model.setOptimizer(ADAM(1.0e-3));
 
 //	auto x = model.addInput( { batch_size, 28, 28, 1 });
 //	x = model.add(Conv2D(32, 5, "linear"), x);
@@ -202,21 +215,22 @@ void train_mnist()
 		double avg_loss = 0.0;
 		double avg_acc = 0.0;
 		int counter = 0;
-		for (int j = 0; j < 1; j += batch_size, counter++)
+		for (int j = 0; j < 5; j += batch_size, counter++)
 		{
 			dataset.packTrainSamples(model.getInput(), model.getTarget());
 			model.forward(batch_size);
-//			model.backward(batch_size);
-//			auto loss = model.getLoss(batch_size);
-//			avg_loss += loss.at(0).get<float>();
+			model.backward(batch_size);
+			auto loss = model.getLoss(batch_size);
+			avg_loss += loss.at(0).get<float>();
 			avg_acc += get_accuracy(model.getOutput(), model.getTarget());
 
-			for (int k = 0; k < 10; k++)
-				std::cout << k << " " << model.getOutput().get<float>( { 0, k }) << " " << model.getTarget().get<float>( { 0, k }) << '\n';
-
-//			model.learn();
+			model.learn();
 		}
-		std::cout << "Epoch " << i << " : train loss = " << avg_loss / counter << ", acc = " << avg_acc / (counter * batch_size) << '\n';
+		for (int k = 0; k < 10; k++)
+			std::cout << k << " " << model.getOutput().get<float>( { 0, k }) << " " << model.getTarget().get<float>( { 0, k }) << '\n';
+		std::cout << '\n';
+		std::cout << "Epoch " << i << " : train loss = " << avg_loss / (counter * batch_size) << ", acc = " << avg_acc / (counter * batch_size)
+				<< '\n';
 
 //		avg_loss = 0.0;
 //		avg_acc = 0.0;
@@ -239,9 +253,26 @@ void train_mnist()
 
 int main()
 {
-	std::cout << Device::hardwareInfo() << std::endl;
+	Expression e;
+//	auto x = e.input();
+//	x = -x;
+//	e.output(-e.input());
 
-	train_mnist();
+	auto x = e.input( { 1, 32 });
+	auto w = e.input( { 1, 32 });
+	auto z = e.sigmoid(e.matmul(x, w, 'n', 't'));
+
+	auto target = e.output(z);
+	auto loss = e.reduce_add(e.constant(0.5) * e.square(z - target));
+
+//	auto z = e.input();
+//	auto t = e.mul(x, y) + z;
+
+	std::cout << e.toString();
+
+//	std::cout << Device::hardwareInfo() << std::endl;
+
+//	train_mnist();
 	std::cout << "END" << std::endl;
 	return 0;
 

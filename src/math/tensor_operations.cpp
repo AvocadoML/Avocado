@@ -10,7 +10,6 @@
 #include <Avocado/core/Tensor.hpp>
 #include <Avocado/core/Scalar.hpp>
 
-#include <Avocado/backend/backend_defs.h>
 #include <Avocado/backend/backend_libraries.hpp>
 
 namespace avocado
@@ -456,9 +455,9 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					backend::avStatus_t status = backend::openclGemm(context, operationA, operationB, alpha.data(), aDesc, aMem, bDesc, bMem,
-							beta.data(), cDesc, cMem);
-					CHECK_OPENCL_STATUS(status)
+//					backend::avStatus_t status = backend::openclGemm(context, operationA, operationB, alpha.data(), aDesc, aMem, bDesc, bMem,
+//							beta.data(), cDesc, cMem);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}
@@ -499,9 +498,9 @@ namespace avocado
 				}
 				case DeviceType::OPENCL:
 				{
-					backend::avStatus_t status = backend::openclGemmBatched(context, operationA, operationB, alpha.data(), aDesc, aMem, bDesc, bMem,
-							beta.data(), cDesc, cMem);
-					CHECK_OPENCL_STATUS(status)
+//					backend::avStatus_t status = backend::openclGemmBatched(context, operationA, operationB, alpha.data(), aDesc, aMem, bDesc, bMem,
+//							beta.data(), cDesc, cMem);
+//					CHECK_OPENCL_STATUS(status)
 					break;
 				}
 			}

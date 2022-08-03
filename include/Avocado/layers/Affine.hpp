@@ -35,8 +35,8 @@ namespace avocado
 
 			Affine* clone(const Json &config) const;
 
-			void forward(const std::vector<Tensor> &input, Tensor &output);
-			void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta);
+			void forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta);
+			void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha, Scalar beta);
 
 			void learn();
 	};

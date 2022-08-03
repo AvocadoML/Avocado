@@ -6,7 +6,7 @@
  */
 
 #if not USE_CUDA
-#include <CudaBackend/cuda_backend.h>
+#include <Avocado/cuda_backend.h>
 
 namespace avocado
 {

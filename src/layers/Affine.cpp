@@ -93,12 +93,13 @@ namespace avocado
 		return new Affine(config["nonlinearity"], config["use_weights"], config["use_bias"]); // @suppress("Ambiguous problem")
 	}
 
-	void Affine::forward(const std::vector<Tensor> &input, Tensor &output)
+	void Affine::forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta)
 	{
 		assert(input.size() == 1);
 		math::affineForward(context(), 1, 0, input[0], output, getWeights().getParam(), getBias().getParam(), m_nonlinearity);
 	}
-	void Affine::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar beta)
+	void Affine::backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut, Scalar alpha,
+			Scalar beta)
 	{
 		assert(input.size() == 1);
 		assert(gradientIn.size() == 1);

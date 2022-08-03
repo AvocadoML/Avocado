@@ -8,7 +8,7 @@
 #ifndef AVOCADO_CORE_TENSOR_HPP_
 #define AVOCADO_CORE_TENSOR_HPP_
 
-#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend_defs.h>
 #include <Avocado/core/Shape.hpp>
 #include <Avocado/core/Device.hpp>
 #include <Avocado/core/DataType.hpp>

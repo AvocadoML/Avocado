@@ -29,7 +29,9 @@ namespace avocado
 
 	Scalar KLDivergenceLoss::getLoss(const Context &context, const Tensor &output, const Tensor &target) const
 	{
-		return math::calcLossFunction(context, LossType::KL_DIVERGECE_LOSS, output, target);
+		const double scale = 1.0 / output.firstDim();
+		const double result = scale * math::calcLossFunction(context, LossType::KL_DIVERGECE_LOSS, output, target).get<double>();
+		return Scalar(result);
 	}
 	void KLDivergenceLoss::getGradient(const Context &context, Tensor &gradient, const Tensor &output, const Tensor &target) const
 	{

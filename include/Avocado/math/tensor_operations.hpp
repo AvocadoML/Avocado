@@ -8,7 +8,7 @@
 #ifndef AVOCADO_MATH_TENSOR_OPERATIONS_HPP_
 #define AVOCADO_MATH_TENSOR_OPERATIONS_HPP_
 
-#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend_defs.h>
 
 #include <cstddef>
 #include <vector>

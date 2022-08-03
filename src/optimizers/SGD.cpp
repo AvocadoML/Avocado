@@ -62,10 +62,16 @@ namespace avocado
 		if (length == 0)
 			return;
 
-		if (m_config.getCoefficients()[0] != 0.0 && m_workspace == nullptr)
-			m_workspace = std::make_unique<Tensor>(param.shape(), param.dtype(), param.device());
+		if (m_workspace == nullptr)
+		{
+			if (m_config.getCoefficients()[0] != 0.0)
+				m_workspace = std::make_unique<Tensor>(param.shape(), param.dtype(), param.device());
+			else
+				m_workspace = std::make_unique<Tensor>(Shape(), param.dtype(), param.device());
+		}
 
 		math::optimizerLearn(context, m_config, 1, 1, param.getParam(), param.getUpdate(), *m_workspace);
+		param.getUpdate().zeroall();
 	}
 
 	std::string SGD::name() const

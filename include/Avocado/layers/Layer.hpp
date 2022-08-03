@@ -84,9 +84,9 @@ namespace avocado
 			virtual Layer& setOptimizer(const Optimizer &optimizer);
 			virtual Layer& setRegularizer(const Regularizer &regularizer);
 
-			virtual void forward(const std::vector<Tensor> &input, Tensor &output) = 0;
+			virtual void forward(const std::vector<Tensor> &input, Tensor &output, Scalar alpha, Scalar beta) = 0;
 			virtual void backward(const std::vector<Tensor> &input, const Tensor &output, std::vector<Tensor> &gradientIn, Tensor &gradientOut,
-					Scalar beta) = 0;
+					Scalar alpha, Scalar beta) = 0;
 
 			virtual void learn();
 

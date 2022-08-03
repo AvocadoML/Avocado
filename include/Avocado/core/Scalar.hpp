@@ -11,7 +11,7 @@
 #include <Avocado/core/DataType.hpp>
 #include <Avocado/core/error_handling.hpp>
 #include <Avocado/math/conversions.hpp>
-#include <Avocado/backend/backend_defs.h>
+#include <Avocado/backend_defs.h>
 
 #include <string>
 #include <array>
