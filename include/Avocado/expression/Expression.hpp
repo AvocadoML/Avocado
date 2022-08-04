@@ -30,11 +30,19 @@ namespace avocado
 			friend class node_reference;
 		private:
 			std::vector<std::shared_ptr<nodes::Node>> m_list_of_nodes;
+
 			std::vector<std::weak_ptr<nodes::Node>> m_inputs;
 			std::vector<std::weak_ptr<nodes::Node>> m_outputs;
+			std::vector<std::weak_ptr<nodes::Node>> m_targets;
+			std::vector<std::weak_ptr<nodes::Node>> m_losses;
+			std::vector<std::weak_ptr<nodes::Node>> m_metrics;
 
 			node_reference add_node(std::shared_ptr<nodes::Node> newNode, std::initializer_list<node_reference> inputs);
 		public:
+			void sort();
+			Expression invert();
+			Expression getBackward() const;
+
 			std::string toString() const;
 			std::string toString2() const;
 
@@ -43,6 +51,14 @@ namespace avocado
 			 * \brief Marks the node as output node of the expression. Returns node to the learning target (can be ignored).
 			 */
 			node_reference output(const node_reference &x);
+			/*
+			 * \brief Marks this node as the loss function output that will be optimized during training.
+			 */
+			void loss(const node_reference &x);
+			/*
+			 * \brief Marks this node as the metric function that will be calculated during training but it's not optimized.
+			 */
+			void metric(const node_reference &x);
 			node_reference view(const node_reference &x);
 			node_reference view(const nodes::Node *x);
 			node_reference view(const std::weak_ptr<nodes::Node> &x);
@@ -125,6 +141,7 @@ namespace avocado
 			/*
 			 * Compound
 			 */
+			node_reference transpose(const node_reference &a, const std::vector<int> &order);
 			node_reference matmul(const node_reference &a, const node_reference &b, char opA, char opB);
 			node_reference conv(const node_reference &a, const node_reference &b, std::initializer_list<int> filterShape);
 	};

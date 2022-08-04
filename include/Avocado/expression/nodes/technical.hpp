@@ -36,6 +36,19 @@ namespace avocado
 				void calculateOutputShape();
 				std::string toString() const;
 		};
+		class Loss: public Node
+		{
+			public:
+				void calculateOutputShape();
+				std::string toString() const;
+				Expression getBackprop() const;
+		};
+		class Metric: public Node
+		{
+			public:
+				void calculateOutputShape();
+				std::string toString() const;
+		};
 
 		class View: public Node
 		{

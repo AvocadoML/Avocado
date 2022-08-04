@@ -44,6 +44,34 @@ namespace avocado
 			return getInput(0).text() + " -> output";
 		}
 
+		void Loss::calculateOutputShape()
+		{
+			if (numberOfInputs() != 1)
+				throw ExpressionTopologyError(METHOD_NAME, "node must have exactly one input");
+			m_output_shape = getInput(0).getOutputShape();
+		}
+		std::string Loss::toString() const
+		{
+			return getInput(0).text() + " -> loss";
+		}
+		Expression Loss::getBackprop() const
+		{
+			Expression result;
+			result.output(result.one());
+			return result;
+		}
+
+		void Metric::calculateOutputShape()
+		{
+			if (numberOfInputs() != 1)
+				throw ExpressionTopologyError(METHOD_NAME, "node must have exactly one input");
+			m_output_shape = getInput(0).getOutputShape();
+		}
+		std::string Metric::toString() const
+		{
+			return getInput(0).text() + " -> metric";
+		}
+
 		void View::calculateOutputShape()
 		{
 			if (numberOfInputs() != 1)

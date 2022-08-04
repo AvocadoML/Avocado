@@ -47,16 +47,20 @@ namespace avocado
 				size_t numberOfInputs() const noexcept;
 				Node& getInput(size_t index);
 				const Node& getInput(size_t index) const;
+				std::weak_ptr<Node> getInputNodePointer(size_t index) const;
 
 				size_t numberOfOutputs() const noexcept;
 				Node& getOutput(size_t index);
 				const Node& getOutput(size_t index) const;
+				std::weak_ptr<Node> getOutputNodePointer(size_t index) const;
 
 				std::string text() const;
-				virtual std::string toString() const = 0;
+				virtual std::string toString() const;
 				virtual Expression getBackprop() const;
 
+				static bool areLinked(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output);
 				static void createLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output);
+				static void removeLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output);
 		};
 
 		Shape getShapeAfterBroadcasting(const Shape &lhs, const Shape &rhs);

@@ -24,9 +24,20 @@
 #include <algorithm>
 #include <stdexcept>
 
+namespace
+{
+	using namespace avocado::nodes;
+	struct Edge
+	{
+			std::weak_ptr<Node> input;
+			std::weak_ptr<Node> output;
+	};
+}
+
 namespace avocado
 {
 	using namespace nodes;
+
 	/*
 	 * private
 	 */
@@ -43,6 +54,74 @@ namespace avocado
 	/*
 	 * public
 	 */
+	void Expression::sort()
+	{
+		// Based on https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
+		std::vector<Edge> list_of_edges;
+		std::vector<std::shared_ptr<Node>> result; // L <- Empty list that will contain the sorted elements
+
+		std::vector<std::shared_ptr<Node>> input_nodes; // S <- Set of all nodes with no incoming edge
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+			if (m_list_of_nodes[i]->numberOfInputs() == 0)
+				input_nodes.push_back(m_list_of_nodes[i]);
+
+		while (not input_nodes.empty())
+		{
+			std::shared_ptr<Node> n = input_nodes.front();
+			input_nodes.erase(input_nodes.begin()); // remove a node n from S
+			result.push_back(n); // add n to L
+
+			while (n->numberOfOutputs() > 0) // for each node m with an edge e from n to m do (repeat until there are no more edges)
+			{
+				std::shared_ptr<Node> m = n->getOutputNodePointer(0).lock();
+				list_of_edges.push_back(Edge { std::weak_ptr<Node>(n), std::weak_ptr<Node>(m) });
+				Node::removeLink(n, m); // remove edge e from the graph
+				if (m->numberOfInputs() == 0) // if m has no other incoming edges then
+					input_nodes.push_back(m); // insert m into S
+			}
+		}
+		assert(m_list_of_nodes.size() == result.size());
+		m_list_of_nodes = result;
+		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
+			Node::createLink(edge->input, edge->output); // re-create all edges
+	}
+	Expression Expression::invert()
+	{
+		std::vector<Edge> list_of_edges;
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+		{
+			std::shared_ptr<Node> n = m_list_of_nodes[i];
+			while (n->numberOfOutputs() > 0)
+			{
+				std::shared_ptr<Node> m = n->getOutputNodePointer(0).lock();
+				list_of_edges.push_back(Edge { std::weak_ptr<Node>(n), std::weak_ptr<Node>(m) });
+				Node::removeLink(n, m);
+			}
+		}
+		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
+			Node::createLink(edge->output, edge->input);
+
+		sort();
+		std::cout << '\n';
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+		{
+			std::cout << m_list_of_nodes[i]->text() << " : inputs [";
+			for (size_t j = 0; j < m_list_of_nodes[i]->numberOfInputs(); j++)
+				std::cout << m_list_of_nodes[i]->getInput(j).text() << ", ";
+			std::cout << "] : outputs [";
+			for (size_t j = 0; j < m_list_of_nodes[i]->numberOfOutputs(); j++)
+				std::cout << m_list_of_nodes[i]->getOutput(j).text() << ", ";
+			std::cout << "]\n";
+		}
+		return Expression();
+	}
+	Expression Expression::getBackward() const
+	{
+		Expression result;
+
+		return result;
+	}
+
 	std::string Expression::toString() const
 	{
 		std::string result;
@@ -63,12 +142,31 @@ namespace avocado
 
 	node_reference Expression::input(const Shape &shape)
 	{
-		return add_node(std::make_shared<Input>(shape), { });
+		std::shared_ptr<Node> tmp = std::make_shared<Input>(shape);
+		m_inputs.push_back(std::weak_ptr<Node>(tmp));
+		return add_node(tmp, { });
 	}
 	node_reference Expression::output(const node_reference &a)
 	{
-		node_reference tmp = add_node(std::make_shared<Output>(), { a });
-		return add_node(std::make_shared<Target>(tmp.getNode().lock()->getOutputShape()), { });
+		std::shared_ptr<Node> tmp = std::make_shared<Output>();
+		m_outputs.push_back(std::weak_ptr<Node>(tmp));
+		node_reference output = add_node(tmp, { a });
+
+		tmp = std::make_shared<Target>(output.getNode().lock()->getOutputShape());
+		m_targets.push_back(std::weak_ptr<Node>(tmp));
+		return add_node(tmp, { });
+	}
+	void Expression::loss(const node_reference &x)
+	{
+		std::shared_ptr<Node> tmp = std::make_shared<Loss>();
+		m_losses.push_back(std::weak_ptr<Node>(tmp));
+		add_node(tmp, { x });
+	}
+	void Expression::metric(const node_reference &x)
+	{
+		std::shared_ptr<Node> tmp = std::make_shared<Metric>();
+		m_metrics.push_back(std::weak_ptr<Node>(tmp));
+		add_node(tmp, { x });
 	}
 	node_reference Expression::view(const node_reference &a)
 	{
@@ -322,6 +420,10 @@ namespace avocado
 	/*
 	 * Compound
 	 */
+	node_reference Expression::transpose(const node_reference &a, const std::vector<int> &order)
+	{
+		return add_node(std::make_shared<Transpose>(order), { a });
+	}
 	node_reference Expression::matmul(const node_reference &a, const node_reference &b, char opA, char opB)
 	{
 		return add_node(std::make_shared<MatrixMultiplication>(opA, opB), { a, b });

@@ -10,7 +10,9 @@
 #include <Avocado/core/error_handling.hpp>
 
 #include <stdexcept>
+#include <algorithm>
 #include <numeric>
+#include <cassert>
 
 namespace avocado
 {
@@ -51,6 +53,10 @@ namespace avocado
 		{
 			return *(m_inputs.at(index).lock());
 		}
+		std::weak_ptr<Node> Node::getInputNodePointer(size_t index) const
+		{
+			return m_inputs.at(index);
+		}
 
 		size_t Node::numberOfOutputs() const noexcept
 		{
@@ -64,10 +70,18 @@ namespace avocado
 		{
 			return *(m_outputs.at(index).lock());
 		}
+		std::weak_ptr<Node> Node::getOutputNodePointer(size_t index) const
+		{
+			return m_outputs.at(index);
+		}
 
 		std::string Node::text() const
 		{
 			return "x" + std::to_string(m_index) + ":" + getOutputShape().toString();
+		}
+		std::string Node::toString() const
+		{
+			return "";
 		}
 		Expression Node::getBackprop() const
 		{
@@ -98,10 +112,41 @@ namespace avocado
 //			return result;
 		}
 
+		bool Node::areLinked(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output)
+		{
+			auto tmp = input.lock();
+			bool result1 = std::find_if(tmp->m_outputs.begin(), tmp->m_outputs.end(), [output](const std::weak_ptr<Node> &x)
+			{	return x.lock() == output.lock();}) != tmp->m_outputs.end();
+			tmp = output.lock();
+			bool result2 = std::find_if(tmp->m_inputs.begin(), tmp->m_inputs.end(), [input](const std::weak_ptr<Node> &x)
+			{	return x.lock() == input.lock();}) != tmp->m_inputs.end();
+			return result1 and result2;
+		}
 		void Node::createLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output)
 		{
+			if (areLinked(input, output))
+				throw std::logic_error("createLink() : nodes are already linked");
 			input.lock()->m_outputs.push_back(output);
 			output.lock()->m_inputs.push_back(input);
+			assert(areLinked(input, output));
+		}
+		void Node::removeLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output)
+		{
+			if (not areLinked(input, output))
+				throw std::logic_error("removeLink() : nodes are not linked");
+
+			auto tmp = input.lock();
+			auto iter1 = std::find_if(tmp->m_outputs.begin(), tmp->m_outputs.end(), [output](const std::weak_ptr<Node> &x)
+			{	return x.lock() == output.lock();});
+			assert(iter1 != tmp->m_outputs.end());
+			tmp->m_outputs.erase(iter1);
+
+			tmp = output.lock();
+			auto iter2 = std::find_if(tmp->m_inputs.begin(), tmp->m_inputs.end(), [input](const std::weak_ptr<Node> &x)
+			{	return x.lock() == input.lock();});
+			assert(iter1 != tmp->m_inputs.end());
+			tmp->m_inputs.erase(iter2);
+			assert(!areLinked(input, output));
 		}
 
 		/*

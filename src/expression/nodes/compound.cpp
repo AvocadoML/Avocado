@@ -30,6 +30,29 @@ namespace avocado
 {
 	namespace nodes
 	{
+		Transpose::Transpose(const std::vector<int> &order) :
+				m_order(order)
+		{
+		}
+		void Transpose::calculateOutputShape()
+		{
+			if (numberOfInputs() != 1)
+				throw ExpressionTopologyError(METHOD_NAME, "node must have exactly one input");
+			m_output_shape = Shape(getInput(0).getOutputShape());
+			for (size_t i = 0; i < m_order.size(); i++)
+				m_output_shape[i] = getInput(0).getOutputShape()[m_order[i]];
+		}
+		std::string Transpose::toString() const
+		{
+			return this->text() + " = transpose(" + getInput(0).text() + "), new axis order = "; // TODO finish this
+		}
+		Expression Transpose::getBackprop() const
+		{
+			Expression result;
+			auto dy = result.input(this->getOutputShape());
+			result.output(result.transpose(dy, m_order));
+			return result;
+		}
 
 		MatrixMultiplication::MatrixMultiplication(char opA, char opB) :
 				m_opA(opA),

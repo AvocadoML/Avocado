@@ -17,6 +17,16 @@ namespace avocado
 
 	namespace nodes
 	{
+		class Transpose: public Node
+		{
+				std::vector<int> m_order;
+			public:
+				Transpose(const std::vector<int> &order);
+				void calculateOutputShape();
+				std::string toString() const;
+				Expression getBackprop() const;
+		};
+
 		class MatrixMultiplication: public Node
 		{
 				char m_opA, m_opB;
