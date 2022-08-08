@@ -20,6 +20,7 @@ namespace avocado
 		class Negation: public Elementwise
 		{
 			public:
+				Negation* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -27,6 +28,7 @@ namespace avocado
 		class Addition: public Broadcastable
 		{
 			public:
+				Addition* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -34,6 +36,7 @@ namespace avocado
 		class Subtraction: public Broadcastable
 		{
 			public:
+				Subtraction* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -41,6 +44,7 @@ namespace avocado
 		class Multiplication: public Broadcastable
 		{
 			public:
+				Multiplication* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -48,6 +52,7 @@ namespace avocado
 		class Division: public Broadcastable
 		{
 			public:
+				Division* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -55,6 +60,7 @@ namespace avocado
 		class Modulo: public Broadcastable
 		{
 			public:
+				Modulo* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};

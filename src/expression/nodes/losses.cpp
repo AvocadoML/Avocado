@@ -13,6 +13,10 @@ namespace avocado
 	namespace nodes
 	{
 
+		MeanSquareLoss* MeanSquareLoss::clone() const
+		{
+			return new MeanSquareLoss();
+		}
 		std::string MeanSquareLoss::toString() const
 		{
 			return this->text() + " = " + getInput(0).text() + " * " + getInput(1).text();

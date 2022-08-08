@@ -18,6 +18,10 @@ namespace avocado
 {
 	namespace nodes
 	{
+		Node* Node::clone() const
+		{
+			return new Node();
+		}
 		void Node::calculateOutputShape()
 		{
 		}
@@ -39,6 +43,10 @@ namespace avocado
 		void Node::setIndex(size_t i) noexcept
 		{
 			m_index = i;
+		}
+		size_t Node::getIndex() const noexcept
+		{
+			return m_index;
 		}
 
 		size_t Node::numberOfInputs() const noexcept
@@ -185,7 +193,7 @@ namespace avocado
 			m_output_shape = getShapeAfterBroadcasting(getInput(0).getOutputShape(), getInput(1).getOutputShape());
 		}
 
-		Reduction::Reduction(std::initializer_list<int> axes) :
+		Reduction::Reduction(std::vector<int> axes) :
 				m_axes(axes)
 		{
 		}

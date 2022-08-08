@@ -34,6 +34,10 @@ namespace avocado
 				m_order(order)
 		{
 		}
+		Transpose* Transpose::clone() const
+		{
+			return new Transpose(m_order);
+		}
 		void Transpose::calculateOutputShape()
 		{
 			if (numberOfInputs() != 1)
@@ -58,6 +62,10 @@ namespace avocado
 				m_opA(opA),
 				m_opB(opB)
 		{
+		}
+		MatrixMultiplication* MatrixMultiplication::clone() const
+		{
+			return new MatrixMultiplication(m_opA, m_opB);
 		}
 		void MatrixMultiplication::calculateOutputShape()
 		{
@@ -97,6 +105,10 @@ namespace avocado
 
 		Convolution::Convolution(const Shape &filterShape)
 		{
+		}
+		Convolution* Convolution::clone() const
+		{
+			return new Convolution( { });
 		}
 		void Convolution::calculateOutputShape()
 		{

@@ -16,6 +16,10 @@ namespace avocado
 	namespace nodes
 	{
 
+		Negation* Negation::clone() const
+		{
+			return new Negation();
+		}
 		std::string Negation::toString() const
 		{
 			return this->text() + " = -" + getInput(0).text();
@@ -28,6 +32,10 @@ namespace avocado
 			return result;
 		}
 
+		Addition* Addition::clone() const
+		{
+			return new Addition();
+		}
 		std::string Addition::toString() const
 		{
 			return this->text() + " = " + getInput(0).text() + " + " + getInput(1).text();
@@ -41,6 +49,10 @@ namespace avocado
 			return result;
 		}
 
+		Subtraction* Subtraction::clone() const
+		{
+			return new Subtraction();
+		}
 		std::string Subtraction::toString() const
 		{
 			return this->text() + " = " + getInput(0).text() + " - " + getInput(1).text();
@@ -54,6 +66,10 @@ namespace avocado
 			return result;
 		}
 
+		Multiplication* Multiplication::clone() const
+		{
+			return new Multiplication();
+		}
 		std::string Multiplication::toString() const
 		{
 			return this->text() + " = " + getInput(0).text() + " * " + getInput(1).text();
@@ -69,6 +85,10 @@ namespace avocado
 			return result;
 		}
 
+		Division* Division::clone() const
+		{
+			return new Division();
+		}
 		std::string Division::toString() const
 		{
 			return this->text() + " = " + getInput(0).text() + " / " + getInput(1).text();
@@ -84,6 +104,10 @@ namespace avocado
 			return result;
 		}
 
+		Modulo* Modulo::clone() const
+		{
+			return new Modulo();
+		}
 		std::string Modulo::toString() const
 		{
 			return this->text() + " = " + getInput(0).text() + " % " + getInput(1).text();

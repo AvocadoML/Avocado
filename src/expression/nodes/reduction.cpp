@@ -29,9 +29,13 @@ namespace avocado
 	namespace nodes
 	{
 
-		ReduceAdd::ReduceAdd(std::initializer_list<int> axes) :
+		ReduceAdd::ReduceAdd(std::vector<int> axes) :
 				Reduction(axes)
 		{
+		}
+		ReduceAdd* ReduceAdd::clone() const
+		{
+			return new ReduceAdd(m_axes);
 		}
 		std::string ReduceAdd::toString() const
 		{
@@ -40,17 +44,18 @@ namespace avocado
 		Expression ReduceAdd::getBackprop() const
 		{
 			Expression result;
-//			auto dy = result.input();
-//			auto x1 = result.view(m_inputs.at(0));
-//			auto x2 = result.view(m_inputs.at(1));
-//			result.output(dy / x2);
-//			result.output(-dy * x1 / result.square(x2));
+			auto dy = result.input(this->getOutputShape());
+			result.output(dy);
 			return result;
 		}
 
-		ReduceMul::ReduceMul(std::initializer_list<int> axes) :
+		ReduceMul::ReduceMul(std::vector<int> axes) :
 				Reduction(axes)
 		{
+		}
+		ReduceMul* ReduceMul::clone() const
+		{
+			return new ReduceMul(m_axes);
 		}
 		std::string ReduceMul::toString() const
 		{
@@ -67,9 +72,13 @@ namespace avocado
 			return result;
 		}
 
-		ReduceMin::ReduceMin(std::initializer_list<int> axes) :
+		ReduceMin::ReduceMin(std::vector<int> axes) :
 				Reduction(axes)
 		{
+		}
+		ReduceMin* ReduceMin::clone() const
+		{
+			return new ReduceMin(m_axes);
 		}
 		std::string ReduceMin::toString() const
 		{
@@ -86,9 +95,13 @@ namespace avocado
 			return result;
 		}
 
-		ReduceMax::ReduceMax(std::initializer_list<int> axes) :
+		ReduceMax::ReduceMax(std::vector<int> axes) :
 				Reduction(axes)
 		{
+		}
+		ReduceMax* ReduceMax::clone() const
+		{
+			return new ReduceMax(m_axes);
 		}
 		std::string ReduceMax::toString() const
 		{
@@ -105,18 +118,26 @@ namespace avocado
 			return result;
 		}
 
-		ReduceAnd::ReduceAnd(std::initializer_list<int> axes) :
+		ReduceAnd::ReduceAnd(std::vector<int> axes) :
 				Reduction(axes)
 		{
+		}
+		ReduceAnd* ReduceAnd::clone() const
+		{
+			return new ReduceAnd(m_axes);
 		}
 		std::string ReduceAnd::toString() const
 		{
 			return this->text() + " = reduce_and(" + getInput(0).text() + ") over axes " + axes_to_string(m_axes);
 		}
 
-		ReduceOr::ReduceOr(std::initializer_list<int> axes) :
+		ReduceOr::ReduceOr(std::vector<int> axes) :
 				Reduction(axes)
 		{
+		}
+		ReduceOr* ReduceOr::clone() const
+		{
+			return new ReduceOr(m_axes);
 		}
 		std::string ReduceOr::toString() const
 		{

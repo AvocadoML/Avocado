@@ -19,6 +19,10 @@ namespace avocado
 		{
 			m_output_shape = shape;
 		}
+		Input* Input::clone() const
+		{
+			return new Input(m_output_shape);
+		}
 		std::string Input::toString() const
 		{
 			return this->text() + " <- input";
@@ -28,11 +32,19 @@ namespace avocado
 		{
 			m_output_shape = shape;
 		}
+		Target* Target::clone() const
+		{
+			return new Target(m_output_shape);
+		}
 		std::string Target::toString() const
 		{
 			return this->text() + " <- target";
 		}
 
+		Output* Output::clone() const
+		{
+			return new Output();
+		}
 		void Output::calculateOutputShape()
 		{
 			if (numberOfInputs() != 1)
@@ -41,9 +53,13 @@ namespace avocado
 		}
 		std::string Output::toString() const
 		{
-			return getInput(0).text() + " -> output";
+			return this->text() + " = " + getInput(0).text() + " -> output";
 		}
 
+		Loss* Loss::clone() const
+		{
+			return new Loss();
+		}
 		void Loss::calculateOutputShape()
 		{
 			if (numberOfInputs() != 1)
@@ -52,7 +68,7 @@ namespace avocado
 		}
 		std::string Loss::toString() const
 		{
-			return getInput(0).text() + " -> loss";
+			return this->text() + " = " + getInput(0).text() + " -> loss";
 		}
 		Expression Loss::getBackprop() const
 		{
@@ -61,6 +77,10 @@ namespace avocado
 			return result;
 		}
 
+		Metric* Metric::clone() const
+		{
+			return new Metric();
+		}
 		void Metric::calculateOutputShape()
 		{
 			if (numberOfInputs() != 1)
@@ -69,9 +89,13 @@ namespace avocado
 		}
 		std::string Metric::toString() const
 		{
-			return getInput(0).text() + " -> metric";
+			return this->text() + " = " + getInput(0).text() + " -> metric";
 		}
 
+		View* View::clone() const
+		{
+			return new View();
+		}
 		void View::calculateOutputShape()
 		{
 			if (numberOfInputs() != 1)
@@ -83,6 +107,10 @@ namespace avocado
 			return this->text() + " = view of " + getInput(0).text();
 		}
 
+		Identity* Identity::clone() const
+		{
+			return new Identity();
+		}
 		std::string Identity::toString() const
 		{
 			return this->text() + " = " + getInput(0).text();
@@ -90,31 +118,14 @@ namespace avocado
 		Expression Identity::getBackprop() const
 		{
 			Expression result;
-			result.output(result.input(this->getOutputShape()));
+			auto x = result.input(this->getOutputShape());
+			result.output(result.identity(x));
 			return result;
 		}
 
 		/*
 		 * Constant values
 		 */
-		void Zero::calculateOutputShape()
-		{
-			m_output_shape = { 1 };
-		}
-		std::string One::toString() const
-		{
-			return this->text() + " = 1";
-		}
-
-		void One::calculateOutputShape()
-		{
-			m_output_shape = { 1 };
-		}
-		std::string Zero::toString() const
-		{
-			return this->text() + " = 0";
-		}
-
 		Constant::Constant(double value) :
 				m_values( { value })
 		{
@@ -122,6 +133,10 @@ namespace avocado
 		Constant::Constant(const std::vector<double> &values) :
 				m_values(values)
 		{
+		}
+		Constant* Constant::clone() const
+		{
+			return new Constant(m_values);
 		}
 		void Constant::calculateOutputShape()
 		{
@@ -146,9 +161,39 @@ namespace avocado
 			return result;
 		}
 
+		One::One() :
+				Constant(1.0)
+		{
+		}
+		One* One::clone() const
+		{
+			return new One();
+		}
+		std::string One::toString() const
+		{
+			return this->text() + " = 1";
+		}
+
+		Zero::Zero() :
+				Constant(0.0)
+		{
+		}
+		Zero* Zero::clone() const
+		{
+			return new Zero();
+		}
+		std::string Zero::toString() const
+		{
+			return this->text() + " = 0";
+		}
+
 		/*
 		 * Selection
 		 */
+		Select* Select::clone() const
+		{
+			return new Select();
+		}
 		void Select::calculateOutputShape()
 		{
 			if (numberOfInputs() != 3)

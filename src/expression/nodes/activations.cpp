@@ -13,6 +13,10 @@ namespace avocado
 	namespace nodes
 	{
 
+		Sigmoid* Sigmoid::clone() const
+		{
+			return new Sigmoid();
+		}
 		std::string Sigmoid::toString() const
 		{
 			return this->text() + " = sigmoid(" + getInput(0).text() + ")";
@@ -26,6 +30,10 @@ namespace avocado
 			return result;
 		}
 
+		ReLU* ReLU::clone() const
+		{
+			return new ReLU();
+		}
 		std::string ReLU::toString() const
 		{
 			return this->text() + " = relu(" + getInput(0).text() + ")";

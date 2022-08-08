@@ -26,7 +26,6 @@ namespace avocado
 
 	class Expression
 	{
-			friend class ExpressionNode;
 			friend class node_reference;
 		private:
 			std::vector<std::shared_ptr<nodes::Node>> m_list_of_nodes;
@@ -39,8 +38,9 @@ namespace avocado
 
 			node_reference add_node(std::shared_ptr<nodes::Node> newNode, std::initializer_list<node_reference> inputs);
 		public:
+			Expression clone() const;
 			void sort();
-			Expression invert();
+			void invert();
 			Expression getBackward() const;
 
 			std::string toString() const;

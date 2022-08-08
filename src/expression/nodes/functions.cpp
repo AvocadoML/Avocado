@@ -16,6 +16,10 @@ namespace avocado
 	namespace nodes
 	{
 
+		AbsoluteValue* AbsoluteValue::clone() const
+		{
+			return new AbsoluteValue();
+		}
 		std::string AbsoluteValue::toString() const
 		{
 			return this->text() + " = abs(" + getInput(0).text() + ")";
@@ -29,6 +33,10 @@ namespace avocado
 			return result;
 		}
 
+		Sign* Sign::clone() const
+		{
+			return new Sign();
+		}
 		std::string Sign::toString() const
 		{
 			return this->text() + " = sign(" + getInput(0).text() + ")";
@@ -40,6 +48,10 @@ namespace avocado
 			return result;
 		}
 
+		Floor* Floor::clone() const
+		{
+			return new Floor();
+		}
 		std::string Floor::toString() const
 		{
 			return this->text() + " = floor(" + getInput(0).text() + ")";
@@ -51,6 +63,10 @@ namespace avocado
 			return result;
 		}
 
+		Ceil* Ceil::clone() const
+		{
+			return new Ceil();
+		}
 		std::string Ceil::toString() const
 		{
 			return this->text() + " = ceil(" + getInput(0).text() + ")";
@@ -65,6 +81,10 @@ namespace avocado
 		/*
 		 * Power
 		 */
+		Square* Square::clone() const
+		{
+			return new Square();
+		}
 		std::string Square::toString() const
 		{
 			return this->text() + " = square(" + getInput(0).text() + ")";
@@ -78,6 +98,10 @@ namespace avocado
 			return result;
 		}
 
+		Cube* Cube::clone() const
+		{
+			return new Cube();
+		}
 		std::string Cube::toString() const
 		{
 			return this->text() + " = cube(" + getInput(0).text() + ")";
@@ -91,6 +115,10 @@ namespace avocado
 			return result;
 		}
 
+		Power* Power::clone() const
+		{
+			return new Power();
+		}
 		std::string Power::toString() const
 		{
 			return this->text() + " = pow(" + getInput(0).text() + ", " + getInput(1).text() + ")";
@@ -106,6 +134,10 @@ namespace avocado
 			return result;
 		}
 
+		SquareRoot* SquareRoot::clone() const
+		{
+			return new SquareRoot();
+		}
 		std::string SquareRoot::toString() const
 		{
 			return this->text() + " = sqrt(" + getInput(0).text() + ")";
@@ -119,6 +151,10 @@ namespace avocado
 			return result;
 		}
 
+		CubeRoot* CubeRoot::clone() const
+		{
+			return new CubeRoot();
+		}
 		std::string CubeRoot::toString() const
 		{
 			return this->text() + " = cbrt(" + getInput(0).text() + ")";
@@ -135,6 +171,10 @@ namespace avocado
 		/*
 		 * Trigonometrical
 		 */
+		Sine* Sine::clone() const
+		{
+			return new Sine();
+		}
 		std::string Sine::toString() const
 		{
 			return this->text() + " = sin(" + getInput(0).text() + ")";
@@ -148,6 +188,10 @@ namespace avocado
 			return result;
 		}
 
+		Cosine* Cosine::clone() const
+		{
+			return new Cosine();
+		}
 		std::string Cosine::toString() const
 		{
 			return this->text() + " = cos(" + getInput(0).text() + ")";
@@ -161,6 +205,10 @@ namespace avocado
 			return result;
 		}
 
+		Tangent* Tangent::clone() const
+		{
+			return new Tangent();
+		}
 		std::string Tangent::toString() const
 		{
 			return this->text() + " = tan(" + getInput(0).text() + ")";
@@ -177,6 +225,10 @@ namespace avocado
 		/*
 		 * Hyperbolical
 		 */
+		HyperbolicalSine* HyperbolicalSine::clone() const
+		{
+			return new HyperbolicalSine();
+		}
 		std::string HyperbolicalSine::toString() const
 		{
 			return this->text() + " = sinh(" + getInput(0).text() + ")";
@@ -190,6 +242,10 @@ namespace avocado
 			return result;
 		}
 
+		HyperbolicalCosine* HyperbolicalCosine::clone() const
+		{
+			return new HyperbolicalCosine();
+		}
 		std::string HyperbolicalCosine::toString() const
 		{
 			return this->text() + " = cosh(" + getInput(0).text() + ")";
@@ -203,6 +259,10 @@ namespace avocado
 			return result;
 		}
 
+		HyperbolicalTangent* HyperbolicalTangent::clone() const
+		{
+			return new HyperbolicalTangent();
+		}
 		std::string HyperbolicalTangent::toString() const
 		{
 			return this->text() + " = tanh(" + getInput(0).text() + ")";
@@ -219,6 +279,10 @@ namespace avocado
 		/*
 		 * Exponential
 		 */
+		Exponential* Exponential::clone() const
+		{
+			return new Exponential();
+		}
 		std::string Exponential::toString() const
 		{
 			return this->text() + " = exp(" + getInput(0).text() + ")";
@@ -232,6 +296,10 @@ namespace avocado
 			return result;
 		}
 
+		Exponential2* Exponential2::clone() const
+		{
+			return new Exponential2();
+		}
 		std::string Exponential2::toString() const
 		{
 			return this->text() + " = exp2(" + getInput(0).text() + ")";
@@ -248,6 +316,10 @@ namespace avocado
 		/*
 		 * Logarithmic
 		 */
+		LogarithmNatural* LogarithmNatural::clone() const
+		{
+			return new LogarithmNatural();
+		}
 		std::string LogarithmNatural::toString() const
 		{
 			return this->text() + " = log(" + getInput(0).text() + ")";
@@ -261,6 +333,10 @@ namespace avocado
 			return result;
 		}
 
+		LogarithmBase10* LogarithmBase10::clone() const
+		{
+			return new LogarithmBase10();
+		}
 		std::string LogarithmBase10::toString() const
 		{
 			return this->text() + " = log10(" + getInput(0).text() + ")";
@@ -274,6 +350,10 @@ namespace avocado
 			return result;
 		}
 
+		LogarithmBase2* LogarithmBase2::clone() const
+		{
+			return new LogarithmBase2();
+		}
 		std::string LogarithmBase2::toString() const
 		{
 			return this->text() + " = log2(" + getInput(0).text() + ")";
@@ -290,6 +370,10 @@ namespace avocado
 		/*
 		 * Min/Max
 		 */
+		Minimum* Minimum::clone() const
+		{
+			return new Minimum();
+		}
 		std::string Minimum::toString() const
 		{
 			return this->text() + " = min(" + getInput(0).text() + ", " + getInput(0).text() + ")";
@@ -305,6 +389,10 @@ namespace avocado
 			return result;
 		}
 
+		Maximum* Maximum::clone() const
+		{
+			return new Maximum();
+		}
 		std::string Maximum::toString() const
 		{
 			return this->text() + " = max(" + getInput(0).text() + ", " + getInput(0).text() + ")";

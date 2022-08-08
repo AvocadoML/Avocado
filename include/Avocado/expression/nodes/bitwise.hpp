@@ -20,31 +20,37 @@ namespace avocado
 		class BitwiseNot: public Elementwise
 		{
 			public:
+				BitwiseNot* clone() const;
 				std::string toString() const;
 		};
 		class BitwiseOr: public Broadcastable
 		{
 			public:
+				BitwiseOr* clone() const;
 				std::string toString() const;
 		};
 		class BitwiseAnd: public Broadcastable
 		{
 			public:
+				BitwiseAnd* clone() const;
 				std::string toString() const;
 		};
 		class BitwiseXor: public Broadcastable
 		{
 			public:
+				BitwiseXor* clone() const;
 				std::string toString() const;
 		};
 		class BitwiseShiftLeft: public Broadcastable
 		{
 			public:
+				BitwiseShiftLeft* clone() const;
 				std::string toString() const;
 		};
 		class BitwiseShiftRight: public Broadcastable
 		{
 			public:
+				BitwiseShiftRight* clone() const;
 				std::string toString() const;
 		};
 

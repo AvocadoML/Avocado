@@ -20,6 +20,8 @@
 #include <Avocado/expression/nodes/reduction.hpp>
 #include <Avocado/expression/nodes/functions.hpp>
 
+#include <Avocado/utils/instanceof.hpp>
+
 #include <cassert>
 #include <algorithm>
 #include <stdexcept>
@@ -32,6 +34,14 @@ namespace
 			std::weak_ptr<Node> input;
 			std::weak_ptr<Node> output;
 	};
+
+	size_t get_index_of(const std::weak_ptr<Node> &node, const std::vector<std::shared_ptr<Node>> &list)
+	{
+		auto iter = std::find_if(list.begin(), list.end(), [node](const std::shared_ptr<Node> &x)
+		{	return x ==node.lock();});
+		assert(iter != list.end());
+		return std::distance(list.begin(), iter);
+	}
 }
 
 namespace avocado
@@ -54,6 +64,40 @@ namespace avocado
 	/*
 	 * public
 	 */
+	Expression Expression::clone() const
+	{
+		Expression result;
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+		{
+			std::shared_ptr<Node> new_node(m_list_of_nodes[i]->clone());
+			new_node->setIndex(m_list_of_nodes[i]->getIndex());
+			new_node->setExpression(result);
+			result.m_list_of_nodes.push_back(new_node);
+		}
+
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+		{
+			for (size_t j = 0; j < m_list_of_nodes[i]->numberOfInputs(); j++)
+			{
+				size_t idx = get_index_of(m_list_of_nodes[i]->getInputNodePointer(j), m_list_of_nodes);
+				Node::createLink(result.m_list_of_nodes[idx], result.m_list_of_nodes[i]);
+			}
+			result.m_list_of_nodes[i]->calculateOutputShape();
+		}
+
+		for (size_t i = 0; i < m_inputs.size(); i++)
+			result.m_inputs.push_back(result.m_list_of_nodes[get_index_of(m_inputs[i], m_list_of_nodes)]);
+		for (size_t i = 0; i < m_outputs.size(); i++)
+			result.m_outputs.push_back(result.m_list_of_nodes[get_index_of(m_outputs[i], m_list_of_nodes)]);
+		for (size_t i = 0; i < m_targets.size(); i++)
+			result.m_targets.push_back(result.m_list_of_nodes[get_index_of(m_targets[i], m_list_of_nodes)]);
+		for (size_t i = 0; i < m_losses.size(); i++)
+			result.m_losses.push_back(result.m_list_of_nodes[get_index_of(m_losses[i], m_list_of_nodes)]);
+		for (size_t i = 0; i < m_metrics.size(); i++)
+			result.m_metrics.push_back(result.m_list_of_nodes[get_index_of(m_metrics[i], m_list_of_nodes)]);
+
+		return result;
+	}
 	void Expression::sort()
 	{
 		// Based on https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
@@ -85,7 +129,7 @@ namespace avocado
 		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
 			Node::createLink(edge->input, edge->output); // re-create all edges
 	}
-	Expression Expression::invert()
+	void Expression::invert()
 	{
 		std::vector<Edge> list_of_edges;
 		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
@@ -102,6 +146,7 @@ namespace avocado
 			Node::createLink(edge->output, edge->input);
 
 		sort();
+		std::swap(m_inputs, m_outputs);
 		std::cout << '\n';
 		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
 		{
@@ -113,7 +158,6 @@ namespace avocado
 				std::cout << m_list_of_nodes[i]->getOutput(j).text() << ", ";
 			std::cout << "]\n";
 		}
-		return Expression();
 	}
 	Expression Expression::getBackward() const
 	{

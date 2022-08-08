@@ -20,6 +20,7 @@ namespace avocado
 		class MeanSquareLoss: public Broadcastable
 		{
 			public:
+				MeanSquareLoss* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};

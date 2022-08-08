@@ -19,6 +19,7 @@ namespace avocado
 		class Sigmoid: public Elementwise
 		{
 			public:
+				Sigmoid* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -26,13 +27,12 @@ namespace avocado
 		class ReLU: public Elementwise
 		{
 			public:
+				ReLU* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 
 	} /* namespace nodes */
 } /* namespace avocado */
-
-
 
 #endif /* AVOCADO_EXPRESSION_NODES_ACTIVATIONS_HPP_ */

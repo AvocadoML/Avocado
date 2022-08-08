@@ -20,12 +20,14 @@ namespace avocado
 		class AbsoluteValue: public Elementwise
 		{
 			public:
+				AbsoluteValue* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Sign: public Elementwise
 		{
 			public:
+				Sign* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -33,12 +35,14 @@ namespace avocado
 		class Floor: public Elementwise
 		{
 			public:
+				Floor* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Ceil: public Elementwise
 		{
 			public:
+				Ceil* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -49,30 +53,35 @@ namespace avocado
 		class Square: public Elementwise
 		{
 			public:
+				Square* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Cube: public Elementwise
 		{
 			public:
+				Cube* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Power: public Broadcastable
 		{
 			public:
+				Power* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class SquareRoot: public Elementwise
 		{
 			public:
+				SquareRoot* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class CubeRoot: public Elementwise
 		{
 			public:
+				CubeRoot* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -83,18 +92,21 @@ namespace avocado
 		class Sine: public Elementwise
 		{
 			public:
+				Sine* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Cosine: public Elementwise
 		{
 			public:
+				Cosine* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Tangent: public Elementwise
 		{
 			public:
+				Tangent* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -105,18 +117,21 @@ namespace avocado
 		class HyperbolicalSine: public Elementwise
 		{
 			public:
+				HyperbolicalSine* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class HyperbolicalCosine: public Elementwise
 		{
 			public:
+				HyperbolicalCosine* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class HyperbolicalTangent: public Elementwise
 		{
 			public:
+				HyperbolicalTangent* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -127,12 +142,14 @@ namespace avocado
 		class Exponential: public Elementwise
 		{
 			public:
+				Exponential* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Exponential2: public Elementwise
 		{
 			public:
+				Exponential2* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -143,18 +160,21 @@ namespace avocado
 		class LogarithmNatural: public Elementwise
 		{
 			public:
+				LogarithmNatural* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class LogarithmBase10: public Elementwise
 		{
 			public:
+				LogarithmBase10* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class LogarithmBase2: public Elementwise
 		{
 			public:
+				LogarithmBase2* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -165,12 +185,14 @@ namespace avocado
 		class Minimum: public Broadcastable
 		{
 			public:
+				Minimum* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class Maximum: public Broadcastable
 		{
 			public:
+				Maximum* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};

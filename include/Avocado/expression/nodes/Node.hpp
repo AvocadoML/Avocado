@@ -37,12 +37,14 @@ namespace avocado
 				Node& operator=(Node &&other) = default;
 				virtual ~Node() = default;
 
+				virtual Node* clone() const;
 				virtual void calculateOutputShape();
 				const Shape& getOutputShape() const noexcept;
 
 				Expression& getExpression() const;
 				void setExpression(Expression &e) noexcept;
 				void setIndex(size_t i) noexcept;
+				size_t getIndex() const noexcept;
 
 				size_t numberOfInputs() const noexcept;
 				Node& getInput(size_t index);
@@ -82,7 +84,7 @@ namespace avocado
 			protected:
 				std::vector<int> m_axes;
 			public:
-				Reduction(std::initializer_list<int> axes);
+				Reduction(std::vector<int> axes);
 				void calculateOutputShape();
 		};
 

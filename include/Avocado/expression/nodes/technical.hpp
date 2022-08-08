@@ -21,24 +21,28 @@ namespace avocado
 		{
 			public:
 				Input(const Shape &shape);
+				Input* clone() const;
 				std::string toString() const;
 		};
 		class Target: public Node
 		{
 			public:
 				Target(const Shape &shape);
+				Target* clone() const;
 				std::string toString() const;
 		};
 
 		class Output: public Node
 		{
 			public:
+				Output* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 		};
 		class Loss: public Node
 		{
 			public:
+				Loss* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 				Expression getBackprop() const;
@@ -46,6 +50,7 @@ namespace avocado
 		class Metric: public Node
 		{
 			public:
+				Metric* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 		};
@@ -53,6 +58,7 @@ namespace avocado
 		class View: public Node
 		{
 			public:
+				View* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 		};
@@ -60,6 +66,7 @@ namespace avocado
 		class Identity: public Elementwise
 		{
 			public:
+				Identity* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -67,25 +74,28 @@ namespace avocado
 		/*
 		 * Constant values
 		 */
-		class One: public Node
-		{
-			public:
-				void calculateOutputShape();
-				std::string toString() const;
-		};
-		class Zero: public Node
-		{
-			public:
-				void calculateOutputShape();
-				std::string toString() const;
-		};
 		class Constant: public Node
 		{
 				std::vector<double> m_values;
 			public:
 				Constant(double value);
 				Constant(const std::vector<double> &values);
+				Constant* clone() const;
 				void calculateOutputShape();
+				std::string toString() const;
+		};
+		class One: public Constant
+		{
+			public:
+				One();
+				One* clone() const;
+				std::string toString() const;
+		};
+		class Zero: public Constant
+		{
+			public:
+				Zero();
+				Zero* clone() const;
 				std::string toString() const;
 		};
 
@@ -95,6 +105,7 @@ namespace avocado
 		class Select: public Node
 		{
 			public:
+				Select* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 				Expression getBackprop() const;

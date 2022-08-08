@@ -22,6 +22,7 @@ namespace avocado
 				std::vector<int> m_order;
 			public:
 				Transpose(const std::vector<int> &order);
+				Transpose* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 				Expression getBackprop() const;
@@ -32,6 +33,7 @@ namespace avocado
 				char m_opA, m_opB;
 			public:
 				MatrixMultiplication(char opA, char opB);
+				MatrixMultiplication* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 				Expression getBackprop() const;
@@ -41,6 +43,7 @@ namespace avocado
 		{
 			public:
 				Convolution(const Shape &filterShape);
+				Convolution* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
 				Expression getBackprop() const;

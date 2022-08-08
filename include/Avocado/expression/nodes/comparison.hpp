@@ -20,31 +20,37 @@ namespace avocado
 		class Equal: public Broadcastable
 		{
 			public:
+				Equal* clone() const;
 				std::string toString() const;
 		};
 		class NotEqual: public Broadcastable
 		{
 			public:
+				NotEqual* clone() const;
 				std::string toString() const;
 		};
 		class LowerThan: public Broadcastable
 		{
 			public:
+				LowerThan* clone() const;
 				std::string toString() const;
 		};
 		class LowerOrEqual: public Broadcastable
 		{
 			public:
+				LowerOrEqual* clone() const;
 				std::string toString() const;
 		};
 		class GreaterThan: public Broadcastable
 		{
 			public:
+				GreaterThan* clone() const;
 				std::string toString() const;
 		};
 		class GreaterOrEqual: public Broadcastable
 		{
 			public:
+				GreaterOrEqual* clone() const;
 				std::string toString() const;
 		};
 

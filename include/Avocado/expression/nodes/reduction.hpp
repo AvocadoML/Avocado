@@ -21,28 +21,32 @@ namespace avocado
 		class ReduceAdd: public Reduction
 		{
 			public:
-				ReduceAdd(std::initializer_list<int> axes);
+				ReduceAdd(std::vector<int> axes);
+				ReduceAdd* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class ReduceMul: public Reduction
 		{
 			public:
-				ReduceMul(std::initializer_list<int> axes);
+				ReduceMul(std::vector<int> axes);
+				ReduceMul* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class ReduceMin: public Reduction
 		{
 			public:
-				ReduceMin(std::initializer_list<int> axes);
+				ReduceMin(std::vector<int> axes);
+				ReduceMin* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
 		class ReduceMax: public Reduction
 		{
 			public:
-				ReduceMax(std::initializer_list<int> axes);
+				ReduceMax(std::vector<int> axes);
+				ReduceMax* clone() const;
 				std::string toString() const;
 				Expression getBackprop() const;
 		};
@@ -50,13 +54,15 @@ namespace avocado
 		class ReduceAnd: public Reduction
 		{
 			public:
-				ReduceAnd(std::initializer_list<int> axes);
+				ReduceAnd(std::vector<int> axes);
+				ReduceAnd* clone() const;
 				std::string toString() const;
 		};
 		class ReduceOr: public Reduction
 		{
 			public:
-				ReduceOr(std::initializer_list<int> axes);
+				ReduceOr(std::vector<int> axes);
+				ReduceOr* clone() const;
 				std::string toString() const;
 		};
 

@@ -258,17 +258,33 @@ int main()
 //	x = -x;
 //	e.output(-e.input());
 
-	auto x = e.input( { 1, 32 });
-	auto w = e.input( { 1, 32 });
-	auto z = e.sigmoid(e.matmul(x, w, 'n', 't'));
+	auto x = e.input( { 1 });
+	auto w = e.input( { 1 });
+	auto z = e.sigmoid(x * w);
+	auto t = e.constant(0.5);
 
 	auto target = e.output(z);
-	auto loss = e.reduce_add(e.constant(0.5) * e.square(z - target));
+	e.loss(t * e.square(z - target));
+//	std::cout << e.toString() << '\n';
+//	e.sort();
+
+//	auto x = e.input( { 2, 784 });
+//	auto w = e.input( { 10, 784 });
+//	auto z = e.sigmoid(e.matmul(x, w, 'n', 't'));
+//
+//	auto target = e.output(z);
+//	auto loss = e.reduce_add(e.constant(0.5) * e.square(z - target));
+//	e.loss(loss);
 
 //	auto z = e.input();
 //	auto t = e.mul(x, y) + z;
 
 	std::cout << e.toString();
+	Expression other = e.clone();
+	other.invert();
+//	std::cout << '\n' << other.toString();
+//	e.invert();
+//	std::cout << e.toString();
 
 //	std::cout << Device::hardwareInfo() << std::endl;
 
