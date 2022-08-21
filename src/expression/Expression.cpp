@@ -5,9 +5,6 @@
  *      Author: Maciej Kozarzewski
  */
 
-#ifndef EXPRESSION_EXPRESSION_CPP_
-#define EXPRESSION_EXPRESSION_CPP_
-
 #include <Avocado/expression/Expression.hpp>
 #include <Avocado/expression/node_reference.hpp>
 
@@ -21,6 +18,7 @@
 #include <Avocado/expression/nodes/functions.hpp>
 
 #include <Avocado/utils/instanceof.hpp>
+#include <Avocado/core/error_handling.hpp>
 
 #include <cassert>
 #include <algorithm>
@@ -31,8 +29,8 @@ namespace
 	using namespace avocado::nodes;
 	struct Edge
 	{
-			std::weak_ptr<Node> input;
-			std::weak_ptr<Node> output;
+			Node *input;
+			Node *output;
 	};
 
 	size_t get_index_of(const std::weak_ptr<Node> &node, const std::vector<std::shared_ptr<Node>> &list)
@@ -42,6 +40,23 @@ namespace
 		assert(iter != list.end());
 		return std::distance(list.begin(), iter);
 	}
+
+	template<typename T>
+	std::vector<T> concatenate_vectors(const std::vector<T> &src1, const std::vector<T> &src2)
+	{
+		std::vector<T> result = src1;
+		result.insert(result.end(), src2.begin(), src2.end());
+		return result;
+	}
+
+	std::vector<std::vector<size_t>> get_connections(std::vector<std::shared_ptr<Node>> &listOfNodes)
+	{
+		std::vector<std::vector<size_t>> result(listOfNodes.size());
+
+		return result;
+	}
+	thread_local size_t letter_counter = 0;
+	const std::vector<char> letters = { 'x', 'y', 'z', 't', 'u', 'v', 'w' };
 }
 
 namespace avocado
@@ -53,24 +68,81 @@ namespace avocado
 	 */
 	node_reference Expression::add_node(std::shared_ptr<Node> newNode, std::initializer_list<node_reference> inputs)
 	{
-		newNode->setIndex(m_list_of_nodes.size());
 		newNode->setExpression(*this);
 		m_list_of_nodes.push_back(newNode);
 		for (auto iter = inputs.begin(); iter < inputs.end(); iter++)
-			Node::createLink(iter->getNode(), newNode);
+			Node::createLink(*(iter->getNode().lock()), *newNode);
 		newNode->calculateOutputShape();
 		return node_reference(newNode);
 	}
 	/*
 	 * public
 	 */
+	Expression::Expression() :
+			m_letter(letters[letter_counter])
+	{
+		letter_counter = (letter_counter + 1) & letters.size();
+	}
+	Expression::~Expression()
+	{
+		letter_counter = (letter_counter - 1) & letters.size();
+	}
+	char Expression::debug_letter() const noexcept
+	{
+		return m_letter;
+	}
+	size_t Expression::getIndexOf(const Node &node) const
+	{
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+			if (m_list_of_nodes[i].get() == &node)
+				return i;
+		throw std::logic_error("getIndexOf() : Node '" + node.toString() + "' is not a part of this expression");
+	}
+	std::weak_ptr<Node> Expression::getNodePointer(const Node &n) const
+	{
+		for (auto iter = m_list_of_nodes.begin(); iter < m_list_of_nodes.end(); iter++)
+			if (iter->get() == &n)
+				return std::weak_ptr<Node>(*iter);
+		throw std::logic_error("No such node");
+	}
+
+	void Expression::replaceNode(std::shared_ptr<Node> node, Expression &e)
+	{
+		if (not instanceof<Input>(node.get()))
+			assert(node->numberOfInputs() == e.m_inputs.size());
+		if (not instanceof<Output>(node.get()))
+			assert(node->numberOfOutputs() == e.m_outputs.size());
+
+		m_list_of_nodes.insert(m_list_of_nodes.end(), e.m_list_of_nodes.begin(), e.m_list_of_nodes.end());
+	}
+	void Expression::removeNode(std::weak_ptr<Node> node, bool restoreLinks)
+	{
+	}
+	Expression Expression::join(const Expression &prev, const Expression &next)
+	{
+		if (prev.m_outputs.size() == next.m_inputs.size())
+			throw ExpressionTopologyError(METHOD_NAME, "cannot join expressions");
+
+		Expression prev_copy = prev.clone();
+		Expression next_copy = prev.clone();
+
+		Expression result;
+		result.m_list_of_nodes = concatenate_vectors(prev_copy.m_list_of_nodes, next_copy.m_list_of_nodes);
+
+		result.m_inputs = prev_copy.m_inputs;
+		result.m_outputs = prev_copy.m_outputs;
+		result.m_targets = concatenate_vectors(prev_copy.m_targets, next_copy.m_targets);
+		result.m_losses = concatenate_vectors(prev_copy.m_losses, next_copy.m_losses);
+		result.m_metrics = concatenate_vectors(prev_copy.m_metrics, next_copy.m_metrics);
+
+		return result;
+	}
 	Expression Expression::clone() const
 	{
 		Expression result;
 		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
 		{
 			std::shared_ptr<Node> new_node(m_list_of_nodes[i]->clone());
-			new_node->setIndex(m_list_of_nodes[i]->getIndex());
 			new_node->setExpression(result);
 			result.m_list_of_nodes.push_back(new_node);
 		}
@@ -80,7 +152,7 @@ namespace avocado
 			for (size_t j = 0; j < m_list_of_nodes[i]->numberOfInputs(); j++)
 			{
 				size_t idx = get_index_of(m_list_of_nodes[i]->getInputNodePointer(j), m_list_of_nodes);
-				Node::createLink(result.m_list_of_nodes[idx], result.m_list_of_nodes[i]);
+				Node::createLink(*(result.m_list_of_nodes[idx]), *(result.m_list_of_nodes[i]));
 			}
 			result.m_list_of_nodes[i]->calculateOutputShape();
 		}
@@ -118,8 +190,8 @@ namespace avocado
 			while (n->numberOfOutputs() > 0) // for each node m with an edge e from n to m do (repeat until there are no more edges)
 			{
 				std::shared_ptr<Node> m = n->getOutputNodePointer(0).lock();
-				list_of_edges.push_back(Edge { std::weak_ptr<Node>(n), std::weak_ptr<Node>(m) });
-				Node::removeLink(n, m); // remove edge e from the graph
+				list_of_edges.push_back(Edge { n.get(), m.get() });
+				Node::removeLink(*n, *m); // remove edge e from the graph
 				if (m->numberOfInputs() == 0) // if m has no other incoming edges then
 					input_nodes.push_back(m); // insert m into S
 			}
@@ -127,7 +199,10 @@ namespace avocado
 		assert(m_list_of_nodes.size() == result.size());
 		m_list_of_nodes = result;
 		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
-			Node::createLink(edge->input, edge->output); // re-create all edges
+			Node::createLink(*(edge->input), *(edge->output)); // re-create all edges
+
+//		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+//			m_list_of_nodes[i]->setIndex(i);
 	}
 	void Expression::invert()
 	{
@@ -138,15 +213,16 @@ namespace avocado
 			while (n->numberOfOutputs() > 0)
 			{
 				std::shared_ptr<Node> m = n->getOutputNodePointer(0).lock();
-				list_of_edges.push_back(Edge { std::weak_ptr<Node>(n), std::weak_ptr<Node>(m) });
-				Node::removeLink(n, m);
+				list_of_edges.push_back(Edge { n.get(), m.get() });
+				Node::removeLink(*n, *m);
 			}
 		}
 		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
-			Node::createLink(edge->output, edge->input);
+			Node::createLink(*(edge->input), *(edge->output));
 
 		sort();
 		std::swap(m_inputs, m_outputs);
+
 		std::cout << '\n';
 		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
 		{
@@ -159,9 +235,62 @@ namespace avocado
 			std::cout << "]\n";
 		}
 	}
-	Expression Expression::getBackward() const
+	Expression Expression::getBackprop()
 	{
+		// first sort the nodes in inverted order
+		std::vector<Edge> list_of_edges;
+		std::vector<size_t> ordering;
+
+		std::vector<std::shared_ptr<Node>> output_nodes;
+		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
+			if (m_list_of_nodes[i]->numberOfOutputs() == 0)
+				output_nodes.push_back(m_list_of_nodes[i]);
+
+		while (not output_nodes.empty())
+		{
+			std::shared_ptr<Node> n = output_nodes.front();
+			output_nodes.erase(output_nodes.begin());
+			ordering.push_back(getIndexOf(*n));
+
+			while (n->numberOfInputs() > 0)
+			{
+				std::shared_ptr<Node> m = n->getInputNodePointer(0).lock();
+				list_of_edges.push_back(Edge { m.get(), n.get() });
+				Node::removeLink(*m, *n);
+				if (m->numberOfOutputs() == 0)
+					output_nodes.push_back(m);
+			}
+		}
+		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
+			Node::createLink(*(edge->input), *(edge->output)); // re-create all edges
+
 		Expression result;
+		std::vector<std::vector<node_reference>> partial_outputs(ordering.size());
+		for (size_t i = 0; i < ordering.size(); i++)
+		{
+			std::shared_ptr<Node> node = m_list_of_nodes[ordering[i]];
+			std::cout << node->toString() << '\n';
+			std::vector<node_reference> gradients;
+			for (size_t j = 0; j < node->numberOfOutputs(); j++)
+			{
+				const Node &out = node->getOutput(j);
+				if (&(out.getExpression()) == this) // exclude nodes that are not part of this expression
+				{
+					std::cout << "checking " << out.toString() << '\n';
+					size_t idx = 0;
+					for (size_t k = 0; k < out.numberOfInputs(); k++)
+						if (&(out.getInput(k)) == node.get())
+						{
+							idx = k;
+							break;
+						}
+					node_reference grad(partial_outputs.at(getIndexOf(out)).at(idx));
+					gradients.push_back(grad);
+				}
+			}
+			partial_outputs[ordering[i]] = node->getBackprop(result, gradients);
+
+		}
 
 		return result;
 	}
@@ -179,7 +308,7 @@ namespace avocado
 		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
 		{
 			result += m_list_of_nodes[i]->toString() + ":\n";
-			result += m_list_of_nodes[i]->getBackprop().toString() + '\n';
+//			result += m_list_of_nodes[i]->getBackprop().toString() + '\n';
 		}
 		return result;
 	}
@@ -190,13 +319,15 @@ namespace avocado
 		m_inputs.push_back(std::weak_ptr<Node>(tmp));
 		return add_node(tmp, { });
 	}
-	node_reference Expression::output(const node_reference &a)
+	void Expression::output(const node_reference &a)
 	{
 		std::shared_ptr<Node> tmp = std::make_shared<Output>();
 		m_outputs.push_back(std::weak_ptr<Node>(tmp));
-		node_reference output = add_node(tmp, { a });
-
-		tmp = std::make_shared<Target>(output.getNode().lock()->getOutputShape());
+		add_node(tmp, { a });
+	}
+	node_reference Expression::target(const node_reference &a)
+	{
+		std::shared_ptr<Node> tmp = std::make_shared<Target>(a.getNode().lock()->getOutputShape());
 		m_targets.push_back(std::weak_ptr<Node>(tmp));
 		return add_node(tmp, { });
 	}
@@ -218,7 +349,7 @@ namespace avocado
 	}
 	node_reference Expression::view(const Node *x)
 	{
-		for (auto iter = m_list_of_nodes.begin(); iter < m_list_of_nodes.end(); iter++)
+		for (auto iter = x->getExpression().m_list_of_nodes.begin(); iter < x->getExpression().m_list_of_nodes.end(); iter++)
 			if (iter->get() == x)
 				return add_node(std::make_shared<View>(), { node_reference(*iter) });
 		throw std::logic_error("Expression::view() : node is not a part of this expression");
@@ -484,4 +615,3 @@ namespace avocado
 
 } /* namespace avocado */
 
-#endif /* EXPRESSION_EXPRESSION_CPP_ */

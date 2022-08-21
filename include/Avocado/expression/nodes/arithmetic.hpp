@@ -22,7 +22,7 @@ namespace avocado
 			public:
 				Negation* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Addition: public Broadcastable
@@ -30,7 +30,7 @@ namespace avocado
 			public:
 				Addition* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Subtraction: public Broadcastable
@@ -38,7 +38,7 @@ namespace avocado
 			public:
 				Subtraction* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Multiplication: public Broadcastable
@@ -46,7 +46,7 @@ namespace avocado
 			public:
 				Multiplication* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Division: public Broadcastable
@@ -54,7 +54,7 @@ namespace avocado
 			public:
 				Division* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Modulo: public Broadcastable
@@ -62,7 +62,7 @@ namespace avocado
 			public:
 				Modulo* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 	} /* namespace nodes */

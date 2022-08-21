@@ -17,8 +17,8 @@
 
 namespace avocado
 {
-	class Expression;
 	class Shape;
+	class Autograd;
 	namespace nodes
 	{
 		class Node;
@@ -27,6 +27,7 @@ namespace avocado
 	class Expression
 	{
 			friend class node_reference;
+			friend class Autograd;
 		private:
 			std::vector<std::shared_ptr<nodes::Node>> m_list_of_nodes;
 
@@ -36,21 +37,37 @@ namespace avocado
 			std::vector<std::weak_ptr<nodes::Node>> m_losses;
 			std::vector<std::weak_ptr<nodes::Node>> m_metrics;
 
+			char m_letter;
 			node_reference add_node(std::shared_ptr<nodes::Node> newNode, std::initializer_list<node_reference> inputs);
 		public:
+			Expression();
+			~Expression();
+
+			char debug_letter() const noexcept;
+			size_t getIndexOf(const nodes::Node &node) const;
+			std::weak_ptr<nodes::Node> getNodePointer(const nodes::Node &n) const;
+
+			void replaceNode(std::shared_ptr<nodes::Node> node, Expression &e);
+			void removeNode(std::weak_ptr<nodes::Node> node, bool restoreLinks);
+			static Expression join(const Expression &prev, const Expression &next);
+
 			Expression clone() const;
 			void sort();
 			void invert();
-			Expression getBackward() const;
+			Expression getBackprop();
 
 			std::string toString() const;
 			std::string toString2() const;
 
 			node_reference input(const Shape &shape);
 			/*
-			 * \brief Marks the node as output node of the expression. Returns node to the learning target (can be ignored).
+			 * \brief Marks the node as output node of the expression.
 			 */
-			node_reference output(const node_reference &x);
+			void output(const node_reference &x);
+			/*
+			 * \brief Marks the node as target node of the expression.
+			 */
+			node_reference target(const node_reference &x);
 			/*
 			 * \brief Marks this node as the loss function output that will be optimized during training.
 			 */

@@ -24,12 +24,11 @@ namespace avocado
 		{
 			return this->text() + " = -" + getInput(0).text();
 		}
-		Expression Negation::getBackprop() const
+		std::vector<node_reference> Negation::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			result.output(-dy);
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto dx = -dy;
+			return std::vector<node_reference>( { dx });
 		}
 
 		Addition* Addition::clone() const
@@ -40,13 +39,12 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " + " + getInput(1).text();
 		}
-		Expression Addition::getBackprop() const
+		std::vector<node_reference> Addition::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			result.output(dy);
-			result.output(dy);
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto dx1 = dy;
+			auto dx2 = dy;
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 		Subtraction* Subtraction::clone() const
@@ -57,13 +55,12 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " - " + getInput(1).text();
 		}
-		Expression Subtraction::getBackprop() const
+		std::vector<node_reference> Subtraction::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			result.output(dy);
-			result.output(-dy);
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto dx1 = dy;
+			auto dx2 = -dy;
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 		Multiplication* Multiplication::clone() const
@@ -74,15 +71,14 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " * " + getInput(1).text();
 		}
-		Expression Multiplication::getBackprop() const
+		std::vector<node_reference> Multiplication::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto x1 = result.view(m_inputs.at(0));
-			auto x2 = result.view(m_inputs.at(1));
-			result.output(dy * x2);
-			result.output(dy * x1);
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto x1 = e.view(m_inputs.at(0));
+			auto x2 = e.view(m_inputs.at(1));
+			auto dx1 = dy * x2;
+			auto dx2 = dy * x1;
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 		Division* Division::clone() const
@@ -93,15 +89,14 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " / " + getInput(1).text();
 		}
-		Expression Division::getBackprop() const
+		std::vector<node_reference> Division::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto x1 = result.view(m_inputs.at(0));
-			auto x2 = result.view(m_inputs.at(1));
-			result.output(dy / x2);
-			result.output(-dy * x1 / result.square(x2));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto x1 = e.view(m_inputs.at(0));
+			auto x2 = e.view(m_inputs.at(1));
+			auto dx1 = dy / x2;
+			auto dx2 = -dy * x1 / e.square(x2);
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 		Modulo* Modulo::clone() const
@@ -112,15 +107,14 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " % " + getInput(1).text();
 		}
-		Expression Modulo::getBackprop() const
+		std::vector<node_reference> Modulo::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto x1 = result.view(m_inputs.at(0));
-			auto x2 = result.view(m_inputs.at(1));
-			result.output(dy);
-			result.output(-dy * result.floor(x1 / x2));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto x1 = e.view(m_inputs.at(0));
+			auto x2 = e.view(m_inputs.at(1));
+			auto dx1 = dy;
+			auto dx2 = -dy * e.floor(x1 / x2);
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 	} /* namespace nodes */

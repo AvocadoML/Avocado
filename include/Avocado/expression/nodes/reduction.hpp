@@ -24,7 +24,7 @@ namespace avocado
 				ReduceAdd(std::vector<int> axes);
 				ReduceAdd* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class ReduceMul: public Reduction
 		{
@@ -32,7 +32,7 @@ namespace avocado
 				ReduceMul(std::vector<int> axes);
 				ReduceMul* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class ReduceMin: public Reduction
 		{
@@ -40,7 +40,7 @@ namespace avocado
 				ReduceMin(std::vector<int> axes);
 				ReduceMin* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class ReduceMax: public Reduction
 		{
@@ -48,7 +48,7 @@ namespace avocado
 				ReduceMax(std::vector<int> axes);
 				ReduceMax* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class ReduceAnd: public Reduction

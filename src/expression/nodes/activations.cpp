@@ -21,13 +21,12 @@ namespace avocado
 		{
 			return this->text() + " = sigmoid(" + getInput(0).text() + ")";
 		}
-		Expression Sigmoid::getBackprop() const
+		std::vector<node_reference> Sigmoid::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto y = result.view(this);
-			result.output(dy * y * (result.one() - y));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto y = e.view(this);
+			auto dx = dy * y * (e.one() - y);
+			return std::vector<node_reference>( { dx });
 		}
 
 		ReLU* ReLU::clone() const
@@ -38,13 +37,12 @@ namespace avocado
 		{
 			return this->text() + " = relu(" + getInput(0).text() + ")";
 		}
-		Expression ReLU::getBackprop() const
+		std::vector<node_reference> ReLU::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto y = result.view(this);
-			result.output(result.select(y > result.zero(), dy, result.zero()));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto y = e.view(this);
+			auto dx = e.select(y > e.zero(), dy, e.zero());
+			return std::vector<node_reference>( { dx });
 		}
 
 	} /* namespace nodes */

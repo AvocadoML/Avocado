@@ -22,14 +22,14 @@ namespace avocado
 			public:
 				AbsoluteValue* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Sign: public Elementwise
 		{
 			public:
 				Sign* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Floor: public Elementwise
@@ -37,14 +37,14 @@ namespace avocado
 			public:
 				Floor* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Ceil: public Elementwise
 		{
 			public:
 				Ceil* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -55,35 +55,35 @@ namespace avocado
 			public:
 				Square* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Cube: public Elementwise
 		{
 			public:
 				Cube* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Power: public Broadcastable
 		{
 			public:
 				Power* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class SquareRoot: public Elementwise
 		{
 			public:
 				SquareRoot* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class CubeRoot: public Elementwise
 		{
 			public:
 				CubeRoot* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -94,21 +94,21 @@ namespace avocado
 			public:
 				Sine* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Cosine: public Elementwise
 		{
 			public:
 				Cosine* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Tangent: public Elementwise
 		{
 			public:
 				Tangent* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -119,21 +119,21 @@ namespace avocado
 			public:
 				HyperbolicalSine* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class HyperbolicalCosine: public Elementwise
 		{
 			public:
 				HyperbolicalCosine* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class HyperbolicalTangent: public Elementwise
 		{
 			public:
 				HyperbolicalTangent* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -144,14 +144,14 @@ namespace avocado
 			public:
 				Exponential* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Exponential2: public Elementwise
 		{
 			public:
 				Exponential2* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -162,21 +162,21 @@ namespace avocado
 			public:
 				LogarithmNatural* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class LogarithmBase10: public Elementwise
 		{
 			public:
 				LogarithmBase10* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class LogarithmBase2: public Elementwise
 		{
 			public:
 				LogarithmBase2* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -187,14 +187,14 @@ namespace avocado
 			public:
 				Minimum* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Maximum: public Broadcastable
 		{
 			public:
 				Maximum* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 	} /* namespace nodes */

@@ -70,11 +70,10 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " -> loss";
 		}
-		Expression Loss::getBackprop() const
+		std::vector<node_reference> Loss::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			result.output(result.one());
-			return result;
+			auto dx = e.one();
+			return std::vector<node_reference>( { dx });
 		}
 
 		Metric* Metric::clone() const
@@ -115,12 +114,11 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text();
 		}
-		Expression Identity::getBackprop() const
+		std::vector<node_reference> Identity::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto x = result.input(this->getOutputShape());
-			result.output(result.identity(x));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto dx = e.identity(dy);
+			return std::vector<node_reference>( { dx });
 		}
 
 		/*
@@ -204,15 +202,14 @@ namespace avocado
 		{
 			return this->text() + " = select(" + getInput(0).text() + ", " + getInput(1).text() + ", " + getInput(2).text() + ")";
 		}
-		Expression Select::getBackprop() const
+		std::vector<node_reference> Select::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto x = result.view(m_inputs.at(0));
-			result.output(result.zero());
-			result.output(result.select(x, dy, result.zero()));
-			result.output(result.select(x, result.zero(), dy));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto x = e.view(m_inputs.at(0));
+			auto dx1 = e.zero();
+			auto dx2 = e.select(x, dy, e.zero());
+			auto dx3 = e.select(x, e.zero(), dy);
+			return std::vector<node_reference>( { dx1, dx2, dx3 });
 		}
 
 	} /* namespace nodes */

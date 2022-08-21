@@ -18,6 +18,18 @@ namespace avocado
 {
 	namespace nodes
 	{
+		node_reference Node::add_gradients(const std::vector<node_reference> &gradients)
+		{
+			if (gradients.empty())
+				throw ExpressionTopologyError(METHOD_NAME, "list of gradients to add cannot be empty");
+			node_reference x = gradients.at(0);
+			for (size_t i = 1; i < gradients.size(); i++)
+				x = x + gradients.at(i);
+			return x;
+		}
+		/*
+		 * public
+		 */
 		Node* Node::clone() const
 		{
 			return new Node();
@@ -39,14 +51,6 @@ namespace avocado
 		void Node::setExpression(Expression &e) noexcept
 		{
 			m_expression = &e;
-		}
-		void Node::setIndex(size_t i) noexcept
-		{
-			m_index = i;
-		}
-		size_t Node::getIndex() const noexcept
-		{
-			return m_index;
 		}
 
 		size_t Node::numberOfInputs() const noexcept
@@ -83,77 +87,67 @@ namespace avocado
 			return m_outputs.at(index);
 		}
 
+		std::weak_ptr<Node> Node::getPointer() const
+		{
+			return getExpression().getNodePointer(*this);
+		}
+
 		std::string Node::text() const
 		{
-			return "x" + std::to_string(m_index) + ":" + getOutputShape().toString();
+			return getExpression().debug_letter() + std::to_string(getExpression().getIndexOf(*this)) + ":" + getOutputShape().toString();
 		}
 		std::string Node::toString() const
 		{
 			return "";
 		}
-		Expression Node::getBackprop() const
+		std::vector<node_reference> Node::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			return Expression();
-//			Expression result;
-//			switch (m_outputs.size())
-//			{
-//				case 0:
-//					break;
-//				case 1:
-//				{
-//					auto x = result.input();
-//					result.output(x);
-//					break;
-//				}
-//				default:
-//				{
-//					auto x = result.input();
-//					for (size_t i = 1; i < m_outputs.size(); i++)
-//					{
-//						auto y = result.input();
-//						x = x + y;
-//					}
-//					result.output(x);
-//					break;
-//				}
-//			}
-//			return result;
+			std::vector<node_reference> result;
+			for (size_t i = 0; i < numberOfInputs(); i++)
+				result.push_back(e.zero());
+			return result;
 		}
 
-		bool Node::areLinked(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output)
+		bool Node::areLinked(const Node &input, const Node &output)
 		{
-			auto tmp = input.lock();
-			bool result1 = std::find_if(tmp->m_outputs.begin(), tmp->m_outputs.end(), [output](const std::weak_ptr<Node> &x)
-			{	return x.lock() == output.lock();}) != tmp->m_outputs.end();
-			tmp = output.lock();
-			bool result2 = std::find_if(tmp->m_inputs.begin(), tmp->m_inputs.end(), [input](const std::weak_ptr<Node> &x)
-			{	return x.lock() == input.lock();}) != tmp->m_inputs.end();
-			return result1 and result2;
+			auto iter1 = std::find_if(input.m_outputs.begin(), input.m_outputs.end(), [&output](const std::weak_ptr<Node> &x)
+			{	return x.lock().get() == &output;});
+			auto iter2 = std::find_if(output.m_inputs.begin(), output.m_inputs.end(), [&input](const std::weak_ptr<Node> &x)
+			{	return x.lock().get() == &input;});
+			return (iter1 != input.m_outputs.end()) and (iter2 != output.m_inputs.end());
 		}
-		void Node::createLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output)
+		void Node::replaceInputLink(Node &oldInput, Node &newInput, Node &output)
+		{
+			assert(areLinked(oldInput, output) && !areLinked(newInput, output));
+			auto iter1 = std::find_if(output.m_inputs.begin(), output.m_inputs.end(), [&oldInput](const std::weak_ptr<Node> &x)
+			{	return x.lock().get() == &oldInput;});
+//			iter oldInput
+//		.m_outputs.erase(iter1);
+		}
+		void Node::replaceOutputLink(Node &input, Node &oldOutput, Node &newOutput)
+		{
+			assert(areLinked(input, oldOutput) && !areLinked(input, newOutput));
+		}
+		void Node::createLink(Node &input, Node &output)
 		{
 			if (areLinked(input, output))
 				throw std::logic_error("createLink() : nodes are already linked");
-			input.lock()->m_outputs.push_back(output);
-			output.lock()->m_inputs.push_back(input);
+			input.m_outputs.push_back(output.getPointer());
+			output.m_inputs.push_back(input.getPointer());
 			assert(areLinked(input, output));
 		}
-		void Node::removeLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output)
+		void Node::removeLink(Node &input, Node &output)
 		{
 			if (not areLinked(input, output))
 				throw std::logic_error("removeLink() : nodes are not linked");
 
-			auto tmp = input.lock();
-			auto iter1 = std::find_if(tmp->m_outputs.begin(), tmp->m_outputs.end(), [output](const std::weak_ptr<Node> &x)
-			{	return x.lock() == output.lock();});
-			assert(iter1 != tmp->m_outputs.end());
-			tmp->m_outputs.erase(iter1);
+			auto iter1 = std::find_if(input.m_outputs.begin(), input.m_outputs.end(), [&output](const std::weak_ptr<Node> &x)
+			{	return x.lock().get() == &output;});
+			input.m_outputs.erase(iter1);
 
-			tmp = output.lock();
-			auto iter2 = std::find_if(tmp->m_inputs.begin(), tmp->m_inputs.end(), [input](const std::weak_ptr<Node> &x)
-			{	return x.lock() == input.lock();});
-			assert(iter1 != tmp->m_inputs.end());
-			tmp->m_inputs.erase(iter2);
+			auto iter2 = std::find_if(output.m_inputs.begin(), output.m_inputs.end(), [&input](const std::weak_ptr<Node> &x)
+			{	return x.lock().get() == &input;});
+			output.m_inputs.erase(iter2);
 			assert(!areLinked(input, output));
 		}
 

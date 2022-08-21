@@ -41,12 +41,11 @@ namespace avocado
 		{
 			return this->text() + " = reduce_add(" + getInput(0).text() + ") over axes: " + axes_to_string(m_axes);
 		}
-		Expression ReduceAdd::getBackprop() const
+		std::vector<node_reference> ReduceAdd::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			result.output(dy);
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto dx = dy;
+			return std::vector<node_reference>( { dx });
 		}
 
 		ReduceMul::ReduceMul(std::vector<int> axes) :
@@ -61,15 +60,11 @@ namespace avocado
 		{
 			return this->text() + " = reduce_mul(" + getInput(0).text() + ") over axes " + axes_to_string(m_axes);
 		}
-		Expression ReduceMul::getBackprop() const
+		std::vector<node_reference> ReduceMul::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			//			auto dy = result.input();
-			//			auto x1 = result.view(m_inputs.at(0));
-			//			auto x2 = result.view(m_inputs.at(1));
-			//			result.output(dy / x2);
-			//			result.output(-dy * x1 / result.square(x2));
-			return result;
+//			auto dy = Node::add_gradients(gradients);
+
+			return std::vector<node_reference>( { });
 		}
 
 		ReduceMin::ReduceMin(std::vector<int> axes) :
@@ -84,15 +79,11 @@ namespace avocado
 		{
 			return this->text() + " = reduce_min(" + getInput(0).text() + ") over axes " + axes_to_string(m_axes);
 		}
-		Expression ReduceMin::getBackprop() const
+		std::vector<node_reference> ReduceMin::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			//			auto dy = result.input();
-			//			auto x1 = result.view(m_inputs.at(0));
-			//			auto x2 = result.view(m_inputs.at(1));
-			//			result.output(dy / x2);
-			//			result.output(-dy * x1 / result.square(x2));
-			return result;
+//			auto dy = Node::add_gradients(gradients);
+
+			return std::vector<node_reference>( { });
 		}
 
 		ReduceMax::ReduceMax(std::vector<int> axes) :
@@ -107,15 +98,11 @@ namespace avocado
 		{
 			return this->text() + " = reduce_max(" + getInput(0).text() + ") over axes " + axes_to_string(m_axes);
 		}
-		Expression ReduceMax::getBackprop() const
+		std::vector<node_reference> ReduceMax::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			//			auto dy = result.input();
-			//			auto x1 = result.view(m_inputs.at(0));
-			//			auto x2 = result.view(m_inputs.at(1));
-			//			result.output(dy / x2);
-			//			result.output(-dy * x1 / result.square(x2));
-			return result;
+//			auto dy = Node::add_gradients(gradients);
+
+			return std::vector<node_reference>( { });
 		}
 
 		ReduceAnd::ReduceAnd(std::vector<int> axes) :

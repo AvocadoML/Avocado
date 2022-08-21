@@ -22,7 +22,7 @@ namespace avocado
 			public:
 				MeanSquareLoss* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 	} /* namespace nodes */

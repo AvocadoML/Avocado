@@ -23,6 +23,7 @@
 #include <Avocado/utils/file_helpers.hpp>
 
 #include <Avocado/expression/Expression.hpp>
+#include <Avocado/expression/autograd.hpp>
 
 #include <numeric>
 #include <algorithm>
@@ -254,19 +255,19 @@ void train_mnist()
 int main()
 {
 	Expression e;
-//	auto x = e.input();
-//	x = -x;
-//	e.output(-e.input());
-
 	auto x = e.input( { 1 });
 	auto w = e.input( { 1 });
 	auto z = e.sigmoid(x * w);
-	auto t = e.constant(0.5);
 
-	auto target = e.output(z);
-	e.loss(t * e.square(z - target));
+	e.output(z);
+	auto target = e.target(z);
+	e.loss(e.constant(0.5) * e.square(z - target));
 //	std::cout << e.toString() << '\n';
 //	e.sort();
+
+	std::cout << e.toString() << '\n';
+	Expression b = e.getBackprop();
+	std::cout << '\n' << b.toString() << '\n';
 
 //	auto x = e.input( { 2, 784 });
 //	auto w = e.input( { 10, 784 });
@@ -279,9 +280,11 @@ int main()
 //	auto z = e.input();
 //	auto t = e.mul(x, y) + z;
 
-	std::cout << e.toString();
-	Expression other = e.clone();
-	other.invert();
+//	Expression other = e.clone();
+//	other.invert();
+
+//	Expression backprop = Autograd::getBackward(e);
+//	std::cout << e.toString();
 //	std::cout << '\n' << other.toString();
 //	e.invert();
 //	std::cout << e.toString();

@@ -21,15 +21,14 @@ namespace avocado
 		{
 			return this->text() + " = " + getInput(0).text() + " * " + getInput(1).text();
 		}
-		Expression MeanSquareLoss::getBackprop() const
+		std::vector<node_reference> MeanSquareLoss::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto x1 = result.view(m_inputs.at(0));
-			auto x2 = result.view(m_inputs.at(1));
-			result.output(dy * (x1 - x2));
-			result.output(dy * (x2 - x1));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto x1 = e.view(m_inputs.at(0));
+			auto x2 = e.view(m_inputs.at(1));
+			auto dx1 = dy * (x1 - x2);
+			auto dx2 = dy * (x2 - x1);
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 	} /* namespace nodes */

@@ -17,6 +17,7 @@
 namespace avocado
 {
 	class Expression;
+	class node_reference;
 
 	namespace nodes
 	{
@@ -24,11 +25,11 @@ namespace avocado
 		{
 			protected:
 				Expression *m_expression = nullptr;
-				size_t m_index = 0;
 				std::vector<std::weak_ptr<Node>> m_inputs;
 				std::vector<std::weak_ptr<Node>> m_outputs;
 				Shape m_output_shape;
 
+				static node_reference add_gradients(const std::vector<node_reference> &gradients);
 			public:
 				Node() = default;
 				Node(const Node &other) = delete;
@@ -43,8 +44,6 @@ namespace avocado
 
 				Expression& getExpression() const;
 				void setExpression(Expression &e) noexcept;
-				void setIndex(size_t i) noexcept;
-				size_t getIndex() const noexcept;
 
 				size_t numberOfInputs() const noexcept;
 				Node& getInput(size_t index);
@@ -56,13 +55,19 @@ namespace avocado
 				const Node& getOutput(size_t index) const;
 				std::weak_ptr<Node> getOutputNodePointer(size_t index) const;
 
+				std::weak_ptr<Node> getPointer() const;
+
 				std::string text() const;
 				virtual std::string toString() const;
-				virtual Expression getBackprop() const;
 
-				static bool areLinked(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output);
-				static void createLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output);
-				static void removeLink(const std::weak_ptr<Node> &input, const std::weak_ptr<Node> &output);
+				virtual std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
+
+				static bool areLinked(const Node &input, const Node &output);
+				static void replaceInputLink(Node &oldInput, Node &newInput, Node &output);
+				static void replaceOutputLink(Node &input, Node &oldOutput, Node &newOutput);
+				static void createLink(Node &input, Node &output);
+				static void removeLink(Node &input, Node &output);
+
 		};
 
 		Shape getShapeAfterBroadcasting(const Shape &lhs, const Shape &rhs);

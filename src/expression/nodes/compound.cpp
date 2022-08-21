@@ -50,12 +50,11 @@ namespace avocado
 		{
 			return this->text() + " = transpose(" + getInput(0).text() + "), new axis order = "; // TODO finish this
 		}
-		Expression Transpose::getBackprop() const
+		std::vector<node_reference> Transpose::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			result.output(result.transpose(dy, m_order));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto dx = e.transpose(dy, m_order);
+			return std::vector<node_reference>( { dx });
 		}
 
 		MatrixMultiplication::MatrixMultiplication(char opA, char opB) :
@@ -92,15 +91,14 @@ namespace avocado
 		{
 			return this->text() + " = matmul_" + m_opA + m_opB + "(" + getInput(0).text() + ", " + getInput(1).text() + ")";
 		}
-		Expression MatrixMultiplication::getBackprop() const
+		std::vector<node_reference> MatrixMultiplication::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-			auto dy = result.input(this->getOutputShape());
-			auto x1 = result.view(m_inputs.at(0));
-			auto x2 = result.view(m_inputs.at(1));
-			result.output(result.matmul(dy, x1, m_opA, transpose(m_opB)));
-			result.output(result.matmul(dy, x2, transpose(m_opA), transpose(m_opB)));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+			auto x1 = e.view(m_inputs.at(0));
+			auto x2 = e.view(m_inputs.at(1));
+			auto dx1 = e.matmul(dy, x1, m_opA, transpose(m_opB));
+			auto dx2 = e.matmul(dy, x2, transpose(m_opA), transpose(m_opB));
+			return std::vector<node_reference>( { dx1, dx2 });
 		}
 
 		Convolution::Convolution(const Shape &filterShape)
@@ -135,15 +133,11 @@ namespace avocado
 		{
 			return this->text() + " = convolution()";
 		}
-		Expression Convolution::getBackprop() const
+		std::vector<node_reference> Convolution::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
 		{
-			Expression result;
-//					auto dy = result.input(this->getOutputShape());
-//					auto x1 = result.view(m_inputs.at(0));
-//					auto x2 = result.view(m_inputs.at(1));
-//					result.output(result.matmul(dy, x1, m_opA, transpose(m_opB)));
-//					result.output(result.matmul(dy, x2, transpose(m_opA), transpose(m_opB)));
-			return result;
+			auto dy = Node::add_gradients(gradients);
+
+			return std::vector<node_reference>( {  });
 		}
 
 	} /* namespace nodes */

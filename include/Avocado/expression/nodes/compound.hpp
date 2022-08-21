@@ -25,7 +25,7 @@ namespace avocado
 				Transpose* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class MatrixMultiplication: public Node
@@ -36,7 +36,7 @@ namespace avocado
 				MatrixMultiplication* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		class Convolution: public Node
@@ -46,7 +46,7 @@ namespace avocado
 				Convolution* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 	} /* namespace nodes */

@@ -45,7 +45,7 @@ namespace avocado
 				Loss* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 		class Metric: public Node
 		{
@@ -68,7 +68,7 @@ namespace avocado
 			public:
 				Identity* clone() const;
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 
 		/*
@@ -108,7 +108,7 @@ namespace avocado
 				Select* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
-				Expression getBackprop() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
 		};
 	} /* namespace nodes */
 } /* namespace avocado */
