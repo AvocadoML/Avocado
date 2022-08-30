@@ -41,20 +41,6 @@ namespace
 		return std::distance(list.begin(), iter);
 	}
 
-	template<typename T>
-	std::vector<T> concatenate_vectors(const std::vector<T> &src1, const std::vector<T> &src2)
-	{
-		std::vector<T> result = src1;
-		result.insert(result.end(), src2.begin(), src2.end());
-		return result;
-	}
-
-	std::vector<std::vector<size_t>> get_connections(std::vector<std::shared_ptr<Node>> &listOfNodes)
-	{
-		std::vector<std::vector<size_t>> result(listOfNodes.size());
-
-		return result;
-	}
 	thread_local size_t letter_counter = 0;
 	const std::vector<char> letters = { 'x', 'y', 'z', 't', 'u', 'v', 'w' };
 }
@@ -118,25 +104,6 @@ namespace avocado
 	void Expression::removeNode(std::weak_ptr<Node> node, bool restoreLinks)
 	{
 	}
-	Expression Expression::join(const Expression &prev, const Expression &next)
-	{
-		if (prev.m_outputs.size() == next.m_inputs.size())
-			throw ExpressionTopologyError(METHOD_NAME, "cannot join expressions");
-
-		Expression prev_copy = prev.clone();
-		Expression next_copy = prev.clone();
-
-		Expression result;
-		result.m_list_of_nodes = concatenate_vectors(prev_copy.m_list_of_nodes, next_copy.m_list_of_nodes);
-
-		result.m_inputs = prev_copy.m_inputs;
-		result.m_outputs = prev_copy.m_outputs;
-		result.m_targets = concatenate_vectors(prev_copy.m_targets, next_copy.m_targets);
-		result.m_losses = concatenate_vectors(prev_copy.m_losses, next_copy.m_losses);
-		result.m_metrics = concatenate_vectors(prev_copy.m_metrics, next_copy.m_metrics);
-
-		return result;
-	}
 	Expression Expression::clone() const
 	{
 		Expression result;
@@ -167,6 +134,10 @@ namespace avocado
 			result.m_losses.push_back(result.m_list_of_nodes[get_index_of(m_losses[i], m_list_of_nodes)]);
 		for (size_t i = 0; i < m_metrics.size(); i++)
 			result.m_metrics.push_back(result.m_list_of_nodes[get_index_of(m_metrics[i], m_list_of_nodes)]);
+		for (size_t i = 0; i < m_variables.size(); i++)
+			result.m_variables.push_back(result.m_list_of_nodes[get_index_of(m_variables[i], m_list_of_nodes)]);
+		for (size_t i = 0; i < m_trainables.size(); i++)
+			result.m_trainables.push_back(result.m_list_of_nodes[get_index_of(m_trainables[i], m_list_of_nodes)]);
 
 		return result;
 	}
@@ -261,22 +232,21 @@ namespace avocado
 					output_nodes.push_back(m);
 			}
 		}
+		// re-create all edges
 		for (auto edge = list_of_edges.begin(); edge < list_of_edges.end(); edge++)
-			Node::createLink(*(edge->input), *(edge->output)); // re-create all edges
+			Node::createLink(*(edge->input), *(edge->output));
 
 		Expression result;
 		std::vector<std::vector<node_reference>> partial_outputs(ordering.size());
 		for (size_t i = 0; i < ordering.size(); i++)
 		{
 			std::shared_ptr<Node> node = m_list_of_nodes[ordering[i]];
-			std::cout << node->toString() << '\n';
 			std::vector<node_reference> gradients;
 			for (size_t j = 0; j < node->numberOfOutputs(); j++)
 			{
 				const Node &out = node->getOutput(j);
 				if (&(out.getExpression()) == this) // exclude nodes that are not part of this expression
 				{
-					std::cout << "checking " << out.toString() << '\n';
 					size_t idx = 0;
 					for (size_t k = 0; k < out.numberOfInputs(); k++)
 						if (&(out.getInput(k)) == node.get())
@@ -289,7 +259,6 @@ namespace avocado
 				}
 			}
 			partial_outputs[ordering[i]] = node->getBackprop(result, gradients);
-
 		}
 
 		return result;
@@ -300,16 +269,6 @@ namespace avocado
 		std::string result;
 		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
 			result += m_list_of_nodes[i]->toString() + '\n';
-		return result;
-	}
-	std::string Expression::toString2() const
-	{
-		std::string result;
-		for (size_t i = 0; i < m_list_of_nodes.size(); i++)
-		{
-			result += m_list_of_nodes[i]->toString() + ":\n";
-//			result += m_list_of_nodes[i]->getBackprop().toString() + '\n';
-		}
 		return result;
 	}
 
@@ -343,6 +302,19 @@ namespace avocado
 		m_metrics.push_back(std::weak_ptr<Node>(tmp));
 		add_node(tmp, { x });
 	}
+	node_reference Expression::variable(const Shape &shape)
+	{
+		std::shared_ptr<Node> tmp = std::make_shared<Variable>(shape);
+		m_variables.push_back(std::weak_ptr<Node>(tmp));
+		return add_node(tmp, { });
+	}
+	node_reference Expression::trainable(const Shape &shape)
+	{
+		std::shared_ptr<Node> tmp = std::make_shared<Trainable>(shape);
+		m_trainables.push_back(std::weak_ptr<Node>(tmp));
+		return add_node(tmp, { });
+	}
+
 	node_reference Expression::view(const node_reference &a)
 	{
 		return add_node(std::make_shared<View>(), { a });

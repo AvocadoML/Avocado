@@ -36,6 +36,8 @@ namespace avocado
 			std::vector<std::weak_ptr<nodes::Node>> m_targets;
 			std::vector<std::weak_ptr<nodes::Node>> m_losses;
 			std::vector<std::weak_ptr<nodes::Node>> m_metrics;
+			std::vector<std::weak_ptr<nodes::Node>> m_variables;
+			std::vector<std::weak_ptr<nodes::Node>> m_trainables;
 
 			char m_letter;
 			node_reference add_node(std::shared_ptr<nodes::Node> newNode, std::initializer_list<node_reference> inputs);
@@ -49,7 +51,6 @@ namespace avocado
 
 			void replaceNode(std::shared_ptr<nodes::Node> node, Expression &e);
 			void removeNode(std::weak_ptr<nodes::Node> node, bool restoreLinks);
-			static Expression join(const Expression &prev, const Expression &next);
 
 			Expression clone() const;
 			void sort();
@@ -57,7 +58,6 @@ namespace avocado
 			Expression getBackprop();
 
 			std::string toString() const;
-			std::string toString2() const;
 
 			node_reference input(const Shape &shape);
 			/*
@@ -76,6 +76,18 @@ namespace avocado
 			 * \brief Marks this node as the metric function that will be calculated during training but it's not optimized.
 			 */
 			void metric(const node_reference &x);
+			/*
+			 * \brief
+			 */
+			node_reference variable(const Shape &shape);
+			/*
+			 * \brief
+			 */
+			node_reference trainable(const Shape &shape);
+
+			/*
+			 * \brie View will not propagate gradients.
+			 */
 			node_reference view(const node_reference &x);
 			node_reference view(const nodes::Node *x);
 			node_reference view(const std::weak_ptr<nodes::Node> &x);

@@ -91,6 +91,38 @@ namespace avocado
 			return this->text() + " = " + getInput(0).text() + " -> metric";
 		}
 
+		Variable::Variable(const Shape &shape)
+		{
+			m_output_shape = shape;
+		}
+		Variable* Variable::clone() const
+		{
+			return new Variable(m_output_shape);
+		}
+		std::string Variable::toString() const
+		{
+			return this->text() + " <- variable";
+		}
+
+		Trainable::Trainable(const Shape &shape)
+		{
+			m_output_shape = shape;
+		}
+		Trainable* Trainable::clone() const
+		{
+			return new Trainable(m_output_shape);
+		}
+		std::string Trainable::toString() const
+		{
+			return this->text() + " <- trainable";
+		}
+		std::vector<node_reference> Trainable::getBackprop(Expression &e, const std::vector<node_reference> &gradients) const
+		{
+			auto dy = Node::add_gradients(gradients);
+			e.output(dy);
+			return std::vector<node_reference>();
+		}
+
 		View* View::clone() const
 		{
 			return new View();
@@ -157,6 +189,14 @@ namespace avocado
 				result += "}";
 			}
 			return result;
+		}
+		size_t Constant::size() const noexcept
+		{
+			return m_values.size();
+		}
+		double Constant::getValue(size_t index) const
+		{
+			return m_values.at(index);
 		}
 
 		One::One() :

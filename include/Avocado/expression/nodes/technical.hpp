@@ -54,6 +54,21 @@ namespace avocado
 				void calculateOutputShape();
 				std::string toString() const;
 		};
+		class Variable: public Node
+		{
+			public:
+				Variable(const Shape &shape);
+				Variable* clone() const;
+				std::string toString() const;
+		};
+		class Trainable: public Node
+		{
+			public:
+				Trainable(const Shape &shape);
+				Trainable* clone() const;
+				std::string toString() const;
+				std::vector<node_reference> getBackprop(Expression &e, const std::vector<node_reference> &gradients) const;
+		};
 
 		class View: public Node
 		{
@@ -83,6 +98,9 @@ namespace avocado
 				Constant* clone() const;
 				void calculateOutputShape();
 				std::string toString() const;
+
+				size_t size() const noexcept;
+				double getValue(size_t index) const;
 		};
 		class One: public Constant
 		{

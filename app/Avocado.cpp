@@ -256,7 +256,7 @@ int main()
 {
 	Expression e;
 	auto x = e.input( { 1 });
-	auto w = e.input( { 1 });
+	auto w = e.trainable( { 1 });
 	auto z = e.sigmoid(x * w);
 
 	e.output(z);
