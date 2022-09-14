@@ -28,6 +28,7 @@ namespace avocado
 				std::vector<std::weak_ptr<Node>> m_inputs;
 				std::vector<std::weak_ptr<Node>> m_outputs;
 				Shape m_output_shape;
+				std::string m_name;
 
 				static node_reference add_gradients(const std::vector<node_reference> &gradients);
 			public:

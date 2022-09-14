@@ -59,31 +59,31 @@ namespace avocado
 
 			std::string toString() const;
 
-			node_reference input(const Shape &shape);
+			node_reference input(const Shape &shape, const std::string &name = "");
 			/*
 			 * \brief Marks the node as output node of the expression.
 			 */
-			void output(const node_reference &x);
+			void output(const node_reference &x, const std::string &name = "");
 			/*
 			 * \brief Marks the node as target node of the expression.
 			 */
-			node_reference target(const node_reference &x);
+			node_reference target(const node_reference &x, const std::string &name = "");
 			/*
 			 * \brief Marks this node as the loss function output that will be optimized during training.
 			 */
-			void loss(const node_reference &x);
+			void loss(const node_reference &x, const std::string &name = "");
 			/*
 			 * \brief Marks this node as the metric function that will be calculated during training but it's not optimized.
 			 */
-			void metric(const node_reference &x);
+			void metric(const node_reference &x, const std::string &name = "");
 			/*
 			 * \brief
 			 */
-			node_reference variable(const Shape &shape);
+			node_reference variable(const Shape &shape, const std::string &name = "");
 			/*
 			 * \brief
 			 */
-			node_reference trainable(const Shape &shape);
+			node_reference trainable(const Shape &shape, const std::string &name = "");
 
 			/*
 			 * \brie View will not propagate gradients.
